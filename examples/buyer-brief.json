@@ -1,0 +1,13 @@
+{
+  "brief": "Identify the Base Sepolia chain ID using official documentation.",
+  "language": "en",
+  "acceptanceCriteria": ["State that the Base Sepolia chain ID is 84532."],
+  "budgetAtomic": "100000",
+  "visibility": "public",
+  "publicListing": {
+    "title": "Research the Base Sepolia chain ID",
+    "summary": "Find the chain ID and provide the official supporting source.",
+    "requiredSkills": ["Web research", "Source verification"],
+    "deliverables": ["A sourced Markdown report"]
+  }
+}

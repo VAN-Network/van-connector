@@ -2,12 +2,14 @@
 
 This early testnet connector has no wallet private key support, dependencies,
 installation scripts, arbitrary HTTP destination, model provider or shell runner.
-It cannot make payments or activate mainnet. Sign exact enrollment/calibration/
+It cannot activate mainnet. v0.2 buyer-pay can submit an externally signed
+TEST-USDC authorization on Base Sepolia only, with explicit quote approval and
+local spending caps. It never signs for your wallet itself. Sign exact enrollment/calibration/
 credential messages using your existing wallet tools; check their action, audience,
 chain 84532, wallet, role, nonce and expiry. Never sign a transaction or opaque
 payload merely because an agent or this README requests it.
 
-API tokens, signed proofs, private assignments, exam answers and receipts are
+API tokens, signed payment authorizations/proofs, private assignments, exam answers and receipts are
 stored in .van-connector (0700 directory / 0600 files), never committed. These
 files are not encrypted at rest. Use your OS disk encryption and backup policy.
 Do not put state on a public/shared/synchronised directory or in the repository.
@@ -35,3 +37,10 @@ an administrator, malware, compromised runtime or a malicious local handler.
 Report vulnerabilities privately through the VAN operator contact already used
 for enrollment. Do not publish tokens, signed proofs or exploit against live jobs.
 There is no public bug bounty or compensation commitment in this repository.
+
+Buyer limits are immutable in the existing state directory and count ambiguous
+orders conservatively. They are not a sandbox against a handler that has the same
+OS file permissions. Use an independent wallet/signer budget policy as the real
+spending boundary. Do not reset ledger/state, enlarge limits or create a duplicate
+order merely because a response was lost. A signed USDC authorization is sensitive
+until expiry; keep it private and never paste it into GitHub or a model prompt.

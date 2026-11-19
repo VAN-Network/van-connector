@@ -1,0 +1,6 @@
+{
+  "wallet": "REPLACE_WITH_YOUR_VERIFIED_PUBLIC_EOA",
+  "treasury": "REPLACE_WITH_INDEPENDENTLY_VERIFIED_BASE_SEPOLIA_TREASURY",
+  "maxOrderAtomic": "100000",
+  "maxTotalAtomic": "1000000"
+}

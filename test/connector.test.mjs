@@ -8,7 +8,7 @@ async function temp(){const dir=await mkdtemp(join(tmpdir(),'van-connector-'));a
 test('transport pins origin, refuses arbitrary paths/redirects, and keeps public requests unauthenticated',async()=>{
  const calls=[];const c=new VanClient({token:'van_'+'a'.repeat(64),fetchImpl:async(u,o)=>{calls.push({u,o});return Response.json({ok:true});}});
  await c.jobs();await c.me();assert.equal(calls[0].u,TEST_ORIGIN+'/public/jobs');assert.equal(calls[0].o.headers.Authorization,undefined);assert.equal(calls[1].o.redirect,'error');assert.equal(calls[1].o.headers.Authorization,'Bearer van_'+'a'.repeat(64));
- for(const p of ['https://evil.example','//evil.example','/jobs/../../private','/jobs'])await assert.rejects(c.request(p),/Unsupported API path/);
+ for(const p of ['https://evil.example','//evil.example','/jobs/../../private','/jobs/invalid'])await assert.rejects(c.request(p),/Unsupported API path/);
  await assert.rejects(new VanClient().me(),/Local API token/);
 });
 test('state is private and exclusive; symlink files and corrupt state fail closed',async()=>{

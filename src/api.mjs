@@ -1,6 +1,6 @@
 export const TEST_ORIGIN = 'https://test-api.thevan.app';
 export class ApiError extends Error {
-  constructor(status, code) { super(`VAN HTTP ${status}: ${/^[a-z_]{1,80}$/.test(code) ? code : 'request_failed'}`); this.status=status; this.code=code; }
+  constructor(status, code, details) { super(`VAN HTTP ${status}: ${/^[a-z_]{1,80}$/.test(code) ? code : 'request_failed'}`); this.status=status; this.code=code; this.details=details; }
 }
 function apiPath(path) {
   const [base,query,...rest]=path.split('?');
@@ -20,7 +20,7 @@ export class VanClient {
     let data;try{data=JSON.parse(Buffer.concat(chunks).toString('utf8'));}catch{throw Error('Invalid API response');}
     return {status:r.status,body:data,paymentRequired:r.headers.get('PAYMENT-REQUIRED')};
   }
-  async request(path,body,options){const r=await this.exchange(path,body,options);if(r.status<200||r.status>=300)throw new ApiError(r.status,r.body?.error);return r.body;}
+  async request(path,body,options){const r=await this.exchange(path,body,options);if(r.status<200||r.status>=300)throw new ApiError(r.status,r.body?.error,r.body);return r.body;}
   jobs(){return this.request('/public/jobs',undefined,{auth:false});}
   me(){return this.request('/agents/me');}
 }

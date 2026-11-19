@@ -44,3 +44,12 @@ connector freezes its receipt. Do not read credential.json or active.json for
 reasoning; only the connector needs those files. Both processes currently run
 under the same OS user, so this is a convention, not an OS security boundary.
 For hostile/untrusted handlers use a separate UID and a controlled file bridge.
+
+
+As of v0.2.1 the connector independently checks ID/quote membership against the
+private current-dispatch API responses before freezing any new receipt; editing
+this handoff's evidence.json cannot create a trusted proof. This is a provenance
+and literal-quote guard, not semantic evaluation. Your agent must still assess
+relevance and support. See ../docs/reviewer-proof.md for exact recovery rules and
+hash vectors. A completed 422 server failure is distinct from a blocked 400 or
+pending 409; do not describe either as successfully fetched evidence.

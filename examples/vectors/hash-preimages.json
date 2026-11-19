@@ -1,0 +1,21 @@
+{
+  "brief": {
+    "brief": "Café research",
+    "language": "en",
+    "acceptanceCriteria": [
+      "Check chain ID",
+      "Check chain ID"
+    ]
+  },
+  "briefCanonicalUtf8": "{\"acceptanceCriteria\":[\"Check chain ID\",\"Check chain ID\"],\"brief\":\"Café research\",\"language\":\"en\"}",
+  "briefHash": "71715879139ae466fc6920c788ef8a7350b8c52e70e85ed804289995e75b1b2f",
+  "requiredCriteria": [
+    "Check chain ID",
+    "Material factual claims are supported by cited sources"
+  ],
+  "submissionMarkdown": "Base Sepolia uses chain ID **84532**.\nSource: https://example.org/source\n",
+  "submissionHash": "d968885f3f98ff6b6d461858fe360bee6d7a43cc42953da1022f53ad8aabbd64",
+  "evidenceRawBodyUtf8": "Line 1\r\nCafé\u0000tail\n",
+  "evidenceBodyHash": "62d8b299772c13f5794124ae052c5f3791f67d12140c5aa8d75c7b8ae4e3c14f",
+  "evidenceExcerpt": "Line 1\r\nCafétail\n"
+}

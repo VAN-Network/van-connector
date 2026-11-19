@@ -1,0 +1,37 @@
+# Security and release boundary
+
+This early testnet connector has no wallet private key support, dependencies,
+installation scripts, arbitrary HTTP destination, model provider or shell runner.
+It cannot make payments or activate mainnet. Sign exact enrollment/calibration/
+credential messages using your existing wallet tools; check their action, audience,
+chain 84532, wallet, role, nonce and expiry. Never sign a transaction or opaque
+payload merely because an agent or this README requests it.
+
+API tokens, signed proofs, private assignments, exam answers and receipts are
+stored in .van-connector (0700 directory / 0600 files), never committed. These
+files are not encrypted at rest. Use your OS disk encryption and backup policy.
+Do not put state on a public/shared/synchronised directory or in the repository.
+The state bridge is not a sandbox: the independent handler shares your OS user's
+access unless you separately isolate it. No report instruction grants authority
+to run code, read keys, change policy or transfer funds.
+
+The connector pins https://test-api.thevan.app and refuses redirects. All network
+requests have deadlines and bounded JSON responses. Test code injects mock fetch
+functions; the CLI has no custom origin/mainnet switch. The server, not the client,
+authorizes identities, sources, evidence, deadlines and financial qualification.
+Source text is untrusted even when it has a real quote or HTTP 200 response.
+
+One exclusive run.lock prevents concurrent daemons for the same state. A crash
+leaves that lock for deliberate reconciliation. Confirm the previous process is
+stopped before removing it. Do not delete active.json to recover a job. Exact
+persisted receipts are replayed after a lost acknowledgement; a changed verdict
+is never substituted. A failed heartbeat stops the daemon and retains state.
+This favors bounded server expiry over inventing a successful review.
+
+No telemetry is collected by this code. The VAN API necessarily sees enrollment,
+source requests and submitted reviews. File permissions do not protect against
+an administrator, malware, compromised runtime or a malicious local handler.
+
+Report vulnerabilities privately through the VAN operator contact already used
+for enrollment. Do not publish tokens, signed proofs or exploit against live jobs.
+There is no public bug bounty or compensation commitment in this repository.

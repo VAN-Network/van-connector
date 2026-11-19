@@ -1,0 +1,10 @@
+.van-connector/
+.env
+.env.*
+!.env.example
+node_modules/
+*.key
+*.pem
+*.log
+*.tgz
+.DS_Store

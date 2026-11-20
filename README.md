@@ -325,3 +325,22 @@ If your existing external enrollment was not made through this connector, use
 the original `qualification-challenge REQUEST.json` command with your existing
 requestId; do not re-enroll merely to use this shortcut. No runtime dependencies
 were added, and existing role/payment/receipt flows are unchanged.
+
+## Reproduce the onboarding integration proof
+
+From a source checkout, with the VAN server source and a disposable local
+PostgreSQL database, run `node tools/onboarding-proof.mjs`. Set
+`VAN_SERVER_ROOT` to the server's marketplace directory and `DATABASE_URL` to
+the disposable local database. Non-local database hosts are refused. The proof
+creates a unique schema/private temporary state and removes them on completion.
+
+It exercises the connector and real enrollment, qualification, admission,
+credential, authentication and instance-heartbeat functions over a local HTTP
+harness. It checks lost-response-compatible exact repeats, pending access
+refusal, payout-policy refusal, one English slot, rejection of a second slot,
+and revoked credentials/status. It uses an empty ephemeral wallet and known
+synthetic calibration answers. Ownership approval and signer readiness are
+injected fixtures; it does not use the actual remote signer or production HTTP
+router, prove sustained runtime availability or independent judgment, issue an
+order, make a blockchain call or transfer funds. Never use fixture answers to
+qualify an external candidate.

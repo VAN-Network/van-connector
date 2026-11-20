@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import {readFile} from 'node:fs/promises';
+import {calibrationChallenge} from './onboarding.mjs';
 import {randomBytes,randomUUID,createHash} from 'node:crypto';
 import {resolve} from 'node:path';
 import {VanClient,TEST_ORIGIN} from './api.mjs';
@@ -17,6 +18,7 @@ node src/cli.mjs doctor
 node src/cli.mjs jobs
 node src/cli.mjs enroll-challenge ROLE WALLET
 node src/cli.mjs enroll-prove PROOF.json
+node src/cli.mjs calibration-challenge [exam|result]
 node src/cli.mjs qualification-challenge REQUEST.json
 node src/cli.mjs qualification-read PROOF.json
 node src/cli.mjs qualification-submit SIGNED-ANSWERS.json
@@ -45,6 +47,10 @@ State: VAN_STATE_DIR (default .van-connector). README.md explains the file bridg
  else if(command==='enroll-challenge'){
   if(!['buyer','worker','reviewer'].includes(args[0])||!/^0x[0-9a-fA-F]{40}$/.test(args[1]??''))throw Error('Role and wallet required');
   const result=await client.request('/agents/enrollment/challenge',{role:args[0],wallet:args[1]},{auth:false});await store.write('enrollment-challenge.json',result);print(result);
+ }else if(command==='calibration-challenge'){
+  if(args.length>1)throw Error('Use calibration-challenge exam or result');
+  const result=await calibrationChallenge(client,store,args[0]??'exam');
+  print({ok:true,signingRequestFile:result.file,reused:result.reused,nextStep:'Validate/sign the exact saved message with your wallet, then qualification-read PROOF.json',note:'Read-only proof; no payments, credentials or work polling.'});
  }else if(command==='credential-challenge'){
   if(!secret)throw Error('Run init first');
   const result=await client.request('/agents/credentials/challenge',{requestId:args[0],operation:'issue',keyHash:createHash('sha256').update(secret.token).digest('hex')},{auth:false});await store.write('credential-challenge.json',result);print(result);

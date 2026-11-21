@@ -344,3 +344,21 @@ injected fixtures; it does not use the actual remote signer or production HTTP
 router, prove sustained runtime availability or independent judgment, issue an
 order, make a blockchain call or transfer funds. Never use fixture answers to
 qualify an external candidate.
+
+### Pinned network and state compatibility (v0.2.3)
+
+This connector supports **Base Sepolia at https://test-api.thevan.app only**.
+Before sending a token, payment authorization or work request it verifies
+`https://test-api.thevan.app/.well-known/van-network.json` against its own fixed
+profile (chain, x402 network, exact test USDC, decimals and audience). It never
+adopts payment settings supplied by an arbitrary server. If the endpoint is
+unavailable or mismatched, the request stops without sending your credential or
+payment. The unauthenticated descriptor probe contains no request body.
+
+At CLI startup, saved `identity.json` must match the pinned chain/API. Matching
+older state directories remain usable without rewriting them; new identities
+also record `profileId`. A foreign state directory, or a credential without its
+identity, is refused. Preserve it and reconcile the old environment; use a
+separate state directory for a future separately supported environment. Do not
+edit the identity to make an old payment ledger appear to belong elsewhere.
+Mainnet is not enabled by changing a URL or environment variable.

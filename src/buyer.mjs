@@ -1,8 +1,9 @@
+import {NETWORK} from './network.mjs';
 import {createHash,randomUUID} from 'node:crypto';
 import {canonical} from './canonical.mjs';
 import {TEST_ORIGIN,ApiError} from './api.mjs';
 import {uuid} from './reviewer.mjs';
-export const ASSET='0x036cbd53842c5426634e7929541ec2318f3dcf7e';
+export const ASSET=NETWORK.asset;
 export const TARIFF='buyer-budget-68-17-15-v1';
 const address=v=>typeof v==='string'&&/^0x[0-9a-f]{40}$/i.test(v)&&!/^0x0{40}$/i.test(v);
 export const atomic=v=>{if(typeof v!=='string'||!/^[1-9][0-9]{0,12}$/.test(v)||BigInt(v)>1000000000000n)throw Error('Invalid atomic USDC amount');return BigInt(v);};
@@ -17,16 +18,16 @@ export function brief(input){
 }
 export function validateQuote(response,order,p,me,now=Date.now()){
  const q=response.body?.quote;let challenge;if(typeof response.paymentRequired!=='string'||response.paymentRequired.length>16384)throw Error('Invalid x402 challenge');try{challenge=JSON.parse(Buffer.from(response.paymentRequired??'','base64').toString('utf8'));}catch{throw Error('Invalid x402 challenge');}
- if(response.status!==402||response.body.status!=='awaiting_payment'||!q||Object.keys(q).sort().join(',')!=='asset,briefHash,budgetAtomic,buyerId,chainId,expiresAt,jobId,payTo,protocolAtomic,resource,reviewerAtomic,version,workerAtomic'||!uuid(q.jobId)||q.jobId!==response.body.jobId||q.buyerId!==me.agentId||q.briefHash!==sha(order.brief)||q.budgetAtomic!==order.brief.budgetAtomic||q.version!==TARIFF||q.chainId!==84532||q.asset!==ASSET||q.payTo!==p.treasury||q.resource!==TEST_ORIGIN+'/jobs/'+q.jobId||response.body.timingVersion!==2||response.body.quoteExpiresAt!==q.expiresAt||!Number.isFinite(Date.parse(q.expiresAt))||Date.parse(q.expiresAt)<=now+10000||Date.parse(q.expiresAt)>now+610000||response.body.quoteHash!=='0x'+sha(q))throw Error('Unexpected frozen quote');
+ if(response.status!==402||response.body.status!=='awaiting_payment'||!q||Object.keys(q).sort().join(',')!=='asset,briefHash,budgetAtomic,buyerId,chainId,expiresAt,jobId,payTo,protocolAtomic,resource,reviewerAtomic,version,workerAtomic'||!uuid(q.jobId)||q.jobId!==response.body.jobId||q.buyerId!==me.agentId||q.briefHash!==sha(order.brief)||q.budgetAtomic!==order.brief.budgetAtomic||q.version!==TARIFF||q.chainId!==NETWORK.chainId||q.asset!==ASSET||q.payTo!==p.treasury||q.resource!==TEST_ORIGIN+'/jobs/'+q.jobId||response.body.timingVersion!==2||response.body.quoteExpiresAt!==q.expiresAt||!Number.isFinite(Date.parse(q.expiresAt))||Date.parse(q.expiresAt)<=now+10000||Date.parse(q.expiresAt)>now+610000||response.body.quoteHash!=='0x'+sha(q))throw Error('Unexpected frozen quote');
  const amount=atomic(q.budgetAtomic),fee=amount*15n/100n,review=(amount-fee)*20n/100n;
  if(fee.toString()!==q.protocolAtomic||review<=0n||review.toString()!==q.reviewerAtomic||(amount-fee-review).toString()!==q.workerAtomic||amount>atomic(p.maxOrderAtomic))throw Error('Unexpected quote allocation');
  const offer=challenge.accepts?.[0];
- if(challenge.x402Version!==2||challenge.accepts?.length!==1||challenge.resource?.url!==q.resource||Object.keys(challenge.resource).join(',')!=='url'||!offer||Object.keys(offer).sort().join(',')!=='amount,asset,extra,maxTimeoutSeconds,network,payTo,scheme'||offer.scheme!=='exact'||offer.network!=='eip155:84532'||offer.asset.toLowerCase()!==ASSET||offer.payTo.toLowerCase()!==p.treasury||offer.amount!==q.budgetAtomic||canonical(offer.extra)!==canonical({name:'USDC',version:'2'})||!Number.isInteger(offer.maxTimeoutSeconds)||offer.maxTimeoutSeconds<1||offer.maxTimeoutSeconds>600)throw Error('Unexpected x402 payment requirements');
+ if(challenge.x402Version!==2||challenge.accepts?.length!==1||challenge.resource?.url!==q.resource||Object.keys(challenge.resource).join(',')!=='url'||!offer||Object.keys(offer).sort().join(',')!=='amount,asset,extra,maxTimeoutSeconds,network,payTo,scheme'||offer.scheme!=='exact'||offer.network!==NETWORK.network||offer.asset.toLowerCase()!==ASSET||offer.payTo.toLowerCase()!==p.treasury||offer.amount!==q.budgetAtomic||canonical(offer.extra)!==canonical({name:'USDC',version:'2'})||!Number.isInteger(offer.maxTimeoutSeconds)||offer.maxTimeoutSeconds<1||offer.maxTimeoutSeconds>600)throw Error('Unexpected x402 payment requirements');
  return {quote:q,quoteHash:'0x'+sha(q),challenge,offer};
 }
 export function signingRequest(validated,p){
  const authorization={from:p.wallet,to:validated.quote.payTo,value:validated.quote.budgetAtomic,validAfter:'0',validBefore:String(Math.floor(Date.parse(validated.quote.expiresAt)/1000)-2),nonce:validated.quoteHash};
- return {quoteHash:validated.quoteHash,domain:{name:'USDC',version:'2',chainId:84532,verifyingContract:ASSET},primaryType:'TransferWithAuthorization',types:{TransferWithAuthorization:[{name:'from',type:'address'},{name:'to',type:'address'},{name:'value',type:'uint256'},{name:'validAfter',type:'uint256'},{name:'validBefore',type:'uint256'},{name:'nonce',type:'bytes32'}]},message:authorization};
+ return {quoteHash:validated.quoteHash,domain:{name:'USDC',version:'2',chainId:NETWORK.chainId,verifyingContract:ASSET},primaryType:'TransferWithAuthorization',types:{TransferWithAuthorization:[{name:'from',type:'address'},{name:'to',type:'address'},{name:'value',type:'uint256'},{name:'validAfter',type:'uint256'},{name:'validBefore',type:'uint256'},{name:'nonce',type:'bytes32'}]},message:authorization};
 }
 async function identity(client,p){const me=await client.me();if(me.role!=='buyer'||me.wallet?.toLowerCase()!==p.wallet||!uuid(me.agentId))throw Error('Buyer identity/policy mismatch');return me;}
 export async function quoteOrder(client,store,label,input,policyInput){

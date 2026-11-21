@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import {NETWORK,validateIdentity} from './network.mjs';
 import {readFile} from 'node:fs/promises';
 import {calibrationChallenge} from './onboarding.mjs';
 import {randomBytes,randomUUID,createHash} from 'node:crypto';
@@ -12,7 +13,7 @@ const [command,...args]=process.argv.slice(2),store=new Store(resolve(process.en
 const print=x=>console.log(JSON.stringify(x,null,2));
 async function input(file){if(!file)throw Error('JSON file required');const s=await readFile(file);if(s.length>131072)throw Error('Input too large');return JSON.parse(s.toString('utf8'));}
 try{
- if(!command||command==='help'){console.log(`THE VAN Connector v0.2 (Base Sepolia only; explicit bounded test-USDC authorization)
+ if(!command||command==='help'){console.log(`THE VAN Connector v0.2.3 (Base Sepolia only; explicit bounded test-USDC authorization)
 node src/cli.mjs init [reviewer|worker|buyer] [minimum-reward-atomic]
 node src/cli.mjs doctor
 node src/cli.mjs jobs
@@ -34,15 +35,17 @@ No automatic signing. Sign exact server challenges with your own wallet tools.
 State: VAN_STATE_DIR (default .van-connector). README.md explains the file bridge.`);process.exitCode=0;}
  else{
  await store.init();let config=await store.read('identity.json'),secret=await store.read('credential.json');
+ if(config)validateIdentity(config);
+ if(secret&&!config)throw Error('Credential has no bound identity; preserve state and reconcile before connecting');
  const client=new VanClient({token:secret?.token});
  if(command==='init'){
   if(config||secret)throw Error('Existing identity is preserved; do not overwrite it');
   const role=['reviewer','worker','buyer'].includes(args[0])?args.shift():'reviewer';
   const minimum=args[0]??(role==='worker'?'68000':'17000');if(!/^[1-9][0-9]{0,12}$/.test(minimum)||BigInt(minimum)>1000000000000n)throw Error('Invalid minimum reward');
-  const release=await store.lock();try{if(await store.read('identity.json')||await store.read('credential.json'))throw Error('Identity already exists');await store.write('credential.json',{token:'van_'+randomBytes(32).toString('hex')});await store.write('identity.json',{instanceId:randomUUID(),minRewardAtomic:minimum,role,chainId:84532,origin:TEST_ORIGIN});}finally{await release();}print({initialized:true,state:store.root,note:'Token remains local. Complete wallet enrollment, calibration and operator admission.'});
+  const release=await store.lock();try{if(await store.read('identity.json')||await store.read('credential.json'))throw Error('Identity already exists');await store.write('credential.json',{token:'van_'+randomBytes(32).toString('hex')});await store.write('identity.json',{instanceId:randomUUID(),minRewardAtomic:minimum,role,profileId:NETWORK.profileId,chainId:NETWORK.chainId,origin:TEST_ORIGIN});}finally{await release();}print({initialized:true,state:store.root,note:'Token remains local. Complete wallet enrollment, calibration and operator admission.'});
  }else if(command==='doctor'){
   const health=await client.request('/health',undefined,{auth:false});let identity=null,access='not_admitted_or_no_credential';try{identity=await client.me();access='authenticated';}catch{}
-  print({origin:TEST_ORIGIN,chainId:84532,health,initialized:!!config,access,identity,reviewerHandler:'External agent must read assignment/evidence and write decisions; no model bundled',payments:'buyer-pay requires exact quote approval, immutable limits and local signature',mainnet:'not supported',onboarding:TEST_ORIGIN+'/reviewer-onboarding',activeState:!!await store.read('active.json')});
+  print({origin:TEST_ORIGIN,chainId:NETWORK.chainId,health,initialized:!!config,access,identity,reviewerHandler:'External agent must read assignment/evidence and write decisions; no model bundled',payments:'buyer-pay requires exact quote approval, immutable limits and local signature',mainnet:'not supported',onboarding:TEST_ORIGIN+'/reviewer-onboarding',activeState:!!await store.read('active.json')});
  }else if(command==='jobs')print(await client.jobs());
  else if(command==='enroll-challenge'){
   if(!['buyer','worker','reviewer'].includes(args[0])||!/^0x[0-9a-fA-F]{40}$/.test(args[1]??''))throw Error('Role and wallet required');

@@ -1,3 +1,4 @@
+import {NETWORK} from '../src/network.mjs';
 import test from 'node:test';import assert from 'node:assert/strict';
 import {mkdtemp,rm,chmod,symlink,readFile,realpath} from 'node:fs/promises';import {tmpdir} from 'node:os';import {join} from 'node:path';import {randomUUID,createHash} from 'node:crypto';
 import {VanClient,TEST_ORIGIN} from '../src/api.mjs';import {Store} from '../src/store.mjs';import {runReviewer,receiptFor,deadlines} from '../src/reviewer.mjs';
@@ -6,8 +7,8 @@ const fixture=()=>{const dispatch={jobId:randomUUID(),dispatchToken:randomUUID()
 const decision={verdict:'INCONCLUSIVE',reason:'Server no-fetch witness',checks:[{criterion:'Check synthetic',status:'UNVERIFIED',reason:'Policy blocked, not fetched',evidenceIds:[],quote:null}]};
 async function temp(){const dir=await mkdtemp(join(tmpdir(),'van-connector-'));await chmod(dir,0o700);const store=new Store(await realpath(dir));await store.init();return store;}
 test('transport pins origin, refuses arbitrary paths/redirects, and keeps public requests unauthenticated',async()=>{
- const calls=[];const c=new VanClient({token:'van_'+'a'.repeat(64),fetchImpl:async(u,o)=>{calls.push({u,o});return Response.json({ok:true});}});
- await c.jobs();await c.me();assert.equal(calls[0].u,TEST_ORIGIN+'/public/jobs');assert.equal(calls[0].o.headers.Authorization,undefined);assert.equal(calls[1].o.redirect,'error');assert.equal(calls[1].o.headers.Authorization,'Bearer van_'+'a'.repeat(64));
+ const calls=[];const c=new VanClient({token:'van_'+'a'.repeat(64),fetchImpl:async(u,o)=>{calls.push({u,o});return Response.json(u.endsWith('/.well-known/van-network.json')?{version:1,...NETWORK}:{ok:true});}});
+ await c.jobs();await c.me();assert.equal(calls[0].u,TEST_ORIGIN+'/.well-known/van-network.json');assert.equal(calls[0].o.headers.Authorization,undefined);assert.equal(calls[1].o.redirect,'error');assert.equal(calls[2].o.headers.Authorization,'Bearer van_'+'a'.repeat(64));
  for(const p of ['https://evil.example','//evil.example','/jobs/../../private','/jobs/invalid'])await assert.rejects(c.request(p),/Unsupported API path/);
  await assert.rejects(new VanClient().me(),/Local API token/);
 });

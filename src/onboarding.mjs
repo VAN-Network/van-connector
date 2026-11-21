@@ -1,3 +1,4 @@
+import {NETWORK} from './network.mjs';
 import {TEST_ORIGIN} from './api.mjs';
 import {canonical} from './canonical.mjs';
 const uuid=v=>typeof v==='string'&&/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(v);
@@ -7,7 +8,7 @@ export function validateCalibrationChallenge(ch,requestId,operation,now=Date.now
    typeof ch.message!=='string'||!ch.message.startsWith(prefix))throw Error('Invalid calibration signing request');
  let p;try{p=JSON.parse(ch.message.slice(prefix.length));}catch{throw Error('Invalid calibration signing request');}
  if(!p||Object.keys(p).sort().join(',')!=='action,audience,chainId,challengeId,examId,expiresAt,operation,requestId'||
-   p.action!=='van.qualification-read.v1'||p.audience!==TEST_ORIGIN||p.chainId!==84532||
+   p.action!=='van.qualification-read.v1'||p.audience!==TEST_ORIGIN||p.chainId!==NETWORK.chainId||
    p.requestId!==requestId||p.operation!==operation||p.challengeId!==ch.challengeId||!uuid(p.examId)||
    !Number.isFinite(Date.parse(p.expiresAt))||Date.parse(p.expiresAt)!==Date.parse(ch.expiresAt)||
    Date.parse(p.expiresAt)<=now||Date.parse(p.expiresAt)>now+330000||

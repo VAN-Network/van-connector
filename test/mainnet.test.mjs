@@ -1,0 +1,21 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {spawnSync} from 'node:child_process';
+function run(code){const r=spawnSync(process.execPath,['--input-type=module','-e',code],{cwd:new URL('..',import.meta.url),env:{PATH:process.env.PATH,VAN_NETWORK:'mainnet'},encoding:'utf8'});assert.equal(r.status,0,r.stderr);}
+test('mainnet connector pins both descriptors before sending credentials or payment authorizations',()=>run(`
+ const {VanClient}=await import('./src/api.mjs');const {NETWORK,validateIdentity}=await import('./src/network.mjs');
+ if(NETWORK.chainId!==8453||NETWORK.audience!=='https://api.thevan.app')throw Error('profile');
+ for(const d of [{version:2,...NETWORK,environmentId:'testnet'},{version:2,...NETWORK,environmentId:'mainnet',asset:'0x'+'11'.repeat(20)}]){let calls=[];const c=new VanClient({token:'van_'+'a'.repeat(64),fetchImpl:async(url,init)=>{calls.push({url,init});return Response.json(url.endsWith('van-network.json')?{version:1,...NETWORK}:d);}});let refused=false;try{await c.me();}catch{refused=true;}if(!refused||calls.length!==2||calls.some(x=>x.init.headers.Authorization||x.init.headers['PAYMENT-SIGNATURE']))throw Error('credential_sent_before_context');}
+ const state={chainId:84532,origin:'https://test-api.thevan.app',profileId:'base-sepolia'};let refused=false;try{validateIdentity(state);}catch{refused=true;}if(!refused)throw Error('testnet_state_reused');
+`));
+test('mainnet buyer accepts scoped native-USDC quotes and rejects legacy quotes or wrong signing domains',()=>run(`
+ const {validateQuote,signingRequest,policy}=await import('./src/buyer.mjs');const {canonical}=await import('./src/canonical.mjs');const {NETWORK}=await import('./src/network.mjs');const {createHash,randomUUID}=await import('node:crypto');
+ const sha=x=>createHash('sha256').update(canonical(x)).digest('hex');const me={agentId:randomUUID()},brief={budgetAtomic:'1000000'},p=policy({wallet:'0x'+'11'.repeat(20),treasury:'0x'+'22'.repeat(20),maxOrderAtomic:'1000000',maxTotalAtomic:'1000000'});
+ const q={version:'van-budget-quote-v2',environmentId:'mainnet',tariffVersion:'buyer-budget-68-17-15-v1',jobId:randomUUID(),buyerId:me.agentId,briefHash:sha(brief),budgetAtomic:'1000000',workerAtomic:'680000',reviewerAtomic:'170000',protocolAtomic:'150000',chainId:8453,asset:NETWORK.asset,payTo:p.treasury,expiresAt:new Date(Date.now()+590000).toISOString()};q.resource=NETWORK.audience+'/jobs/'+q.jobId;
+ const offer={scheme:'exact',network:NETWORK.network,amount:q.budgetAtomic,asset:NETWORK.asset,payTo:p.treasury,maxTimeoutSeconds:580,extra:{name:'USD Coin',version:'2'}};
+ const response=()=>({status:402,body:{status:'awaiting_payment',jobId:q.jobId,quote:q,quoteHash:'0x'+sha(q),timingVersion:2,quoteExpiresAt:q.expiresAt},paymentRequired:Buffer.from(JSON.stringify({x402Version:2,resource:{url:q.resource},accepts:[offer]})).toString('base64')});
+ const v=validateQuote(response(),{brief},p,me),sign=signingRequest(v,p);if(sign.domain.name!=='USD Coin'||sign.domain.chainId!==8453||sign.domain.verifyingContract!==NETWORK.asset||sign.message.nonce!==v.quoteHash)throw Error('wrong_native_usdc_domain');
+ offer.extra.name='USDC';let refused=false;try{validateQuote(response(),{brief},p,me);}catch{refused=true;}if(!refused)throw Error('testnet_domain_accepted');offer.extra.name='USD Coin';q.version=q.tariffVersion;delete q.environmentId;delete q.tariffVersion;refused=false;try{validateQuote(response(),{brief},p,me);}catch{refused=true;}if(!refused)throw Error('legacy_quote_accepted');
+`));
+test('worker and reviewer refuse saved testnet work before any API call',()=>run(`
+ const {runWorker}=await import('./src/worker.mjs');const {runReviewer}=await import('./src/reviewer.mjs');let calls=0;const client={request:async()=>{calls++;throw Error('called');}};const store={lock:async()=>async()=>{},read:async()=>({phase:'claimed',jobId:'11111111-1111-4111-8111-111111111111'})};
+ for(const fn of [()=>runWorker(client,store,{instanceId:'22222222-2222-4222-8222-222222222222',minRewardAtomic:'680000'},'11111111-1111-4111-8111-111111111111'),()=>runReviewer(client,store,{})]){let refused=false;try{await fn();}catch(e){refused=/different deployment/.test(e.message);}if(!refused||calls)throw Error('saved_foreign_work_replayed');}
+`));

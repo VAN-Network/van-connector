@@ -85,3 +85,5 @@ An HTTP acknowledgement is not final on-chain settlement. Use `buyer-status`
 until funding and settlement are confirmed. Keep the state for reconciliation
 or refund; do not generate a new signature to work around an uncertain reply.
 No CDP secret, treasury private key or VAN server access is supplied to agents.
+
+Exact mainnet enrollment and qualification API/signature contract: [mainnet API guide](mainnet-api.md).

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import {NETWORK,validateIdentity} from './network.mjs';
+import {NETWORK,ENVIRONMENT,validateIdentity} from './network.mjs';
 import {readFile} from 'node:fs/promises';
 import {calibrationChallenge} from './onboarding.mjs';
 import {randomBytes,randomUUID,createHash} from 'node:crypto';
@@ -9,11 +9,11 @@ import {Store} from './store.mjs';
 import {runReviewer} from './reviewer.mjs';
 import {runWorker} from './worker.mjs';
 import {quoteOrder,payOrder,policy} from './buyer.mjs';
-const [command,...args]=process.argv.slice(2),store=new Store(resolve(process.env.VAN_STATE_DIR??'.van-connector'));
+const [command,...args]=process.argv.slice(2),store=new Store(resolve(process.env.VAN_STATE_DIR??(ENVIRONMENT==='mainnet'?'.van-connector-mainnet':'.van-connector')));
 const print=x=>console.log(JSON.stringify(x,null,2));
 async function input(file){if(!file)throw Error('JSON file required');const s=await readFile(file);if(s.length>131072)throw Error('Input too large');return JSON.parse(s.toString('utf8'));}
 try{
- if(!command||command==='help'){console.log(`THE VAN Connector v0.2.3 (Base Sepolia only; explicit bounded test-USDC authorization)
+ if(!command||command==='help'){console.log(`THE VAN Connector v0.3.0 candidate (testnet/mainnet profiles; explicit bounded USDC authorization)
 node src/cli.mjs init [reviewer|worker|buyer] [minimum-reward-atomic]
 node src/cli.mjs doctor
 node src/cli.mjs jobs
@@ -42,10 +42,10 @@ State: VAN_STATE_DIR (default .van-connector). README.md explains the file bridg
   if(config||secret)throw Error('Existing identity is preserved; do not overwrite it');
   const role=['reviewer','worker','buyer'].includes(args[0])?args.shift():'reviewer';
   const minimum=args[0]??(role==='worker'?'68000':'17000');if(!/^[1-9][0-9]{0,12}$/.test(minimum)||BigInt(minimum)>1000000000000n)throw Error('Invalid minimum reward');
-  const release=await store.lock();try{if(await store.read('identity.json')||await store.read('credential.json'))throw Error('Identity already exists');await store.write('credential.json',{token:'van_'+randomBytes(32).toString('hex')});await store.write('identity.json',{instanceId:randomUUID(),minRewardAtomic:minimum,role,profileId:NETWORK.profileId,chainId:NETWORK.chainId,origin:TEST_ORIGIN});}finally{await release();}print({initialized:true,state:store.root,note:'Token remains local. Complete wallet enrollment, calibration and operator admission.'});
+  const release=await store.lock();try{if(await store.read('identity.json')||await store.read('credential.json'))throw Error('Identity already exists');await store.write('credential.json',{token:'van_'+randomBytes(32).toString('hex')});await store.write('identity.json',{instanceId:randomUUID(),minRewardAtomic:minimum,role,...(ENVIRONMENT==='mainnet'?{environmentId:'mainnet'}:{}),profileId:NETWORK.profileId,chainId:NETWORK.chainId,origin:TEST_ORIGIN});}finally{await release();}print({initialized:true,state:store.root,note:'Token remains local. Complete wallet enrollment, calibration and operator admission.'});
  }else if(command==='doctor'){
-  const health=await client.request('/health',undefined,{auth:false});let identity=null,access='not_admitted_or_no_credential';try{identity=await client.me();access='authenticated';}catch{}
-  print({origin:TEST_ORIGIN,chainId:NETWORK.chainId,health,initialized:!!config,access,identity,reviewerHandler:'External agent must read assignment/evidence and write decisions; no model bundled',payments:'buyer-pay requires exact quote approval, immutable limits and local signature',mainnet:'not supported',onboarding:TEST_ORIGIN+'/reviewer-onboarding',activeState:!!await store.read('active.json')});
+  const health=await client.request('/health',undefined,{auth:false});let ready=null;if(ENVIRONMENT==='mainnet'){const r=await client.exchange('/health/ready',undefined,{auth:false});ready={httpStatus:r.status,...r.body};}let identity=null,access='not_admitted_or_no_credential';try{identity=await client.me();access='authenticated';}catch{}
+  print({origin:TEST_ORIGIN,chainId:NETWORK.chainId,health,ready,initialized:!!config,access,identity,reviewerHandler:'External agent must read assignment/evidence and write decisions; no model bundled',payments:'buyer-pay requires exact quote approval, immutable limits and local signature',environment:ENVIRONMENT,mainnet:ENVIRONMENT==='mainnet'?'bounded pilot; server admission required':'select VAN_NETWORK=mainnet with separate state',onboarding:TEST_ORIGIN+'/reviewer-onboarding',activeState:!!await store.read('active.json')});
  }else if(command==='jobs')print(await client.jobs());
  else if(command==='enroll-challenge'){
   if(!['buyer','worker','reviewer'].includes(args[0])||!/^0x[0-9a-fA-F]{40}$/.test(args[1]??''))throw Error('Role and wallet required');

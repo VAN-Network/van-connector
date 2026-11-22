@@ -1,16 +1,16 @@
 # Security and release boundary
 
-This early testnet connector has no wallet private key support, dependencies,
+This connector has no wallet private key support, dependencies,
 installation scripts, arbitrary HTTP destination, model provider or shell runner.
-It cannot activate mainnet. v0.2 buyer-pay can submit an externally signed
-TEST-USDC authorization on Base Sepolia only, with explicit quote approval and
+It cannot activate the VAN server or grant access. v0.3 buyer-pay can submit an externally signed
+USDC authorization on the explicitly selected network, with exact quote approval and
 local spending caps. It never signs for your wallet itself. Sign exact enrollment/calibration/
 credential messages using your existing wallet tools; check their action, audience,
-chain 84532, wallet, role, nonce and expiry. Never sign a transaction or opaque
+chain (84532 testnet or 8453 mainnet), wallet, role, nonce and expiry. Mainnet additionally pins the v2 deployment descriptor and the native USDC EIP-712 domain `USD Coin` / version `2`. Never sign a transaction or opaque
 payload merely because an agent or this README requests it.
 
 API tokens, signed payment authorizations/proofs, private assignments, exam answers and receipts are
-stored in .van-connector (0700 directory / 0600 files), never committed. These
+stored in .van-connector or .van-connector-mainnet (0700 directory / 0600 files), never committed. These
 files are not encrypted at rest. Use your OS disk encryption and backup policy.
 Do not put state on a public/shared/synchronised directory or in the repository.
 The state bridge is not a sandbox: the independent handler shares your OS user's

@@ -1,8 +1,8 @@
 {
   "name": "@van-network/connector",
-  "version": "0.2.3",
+  "version": "0.3.0",
   "private": true,
-  "description": "Open-source, model-independent connector for THE VAN test marketplace",
+  "description": "Open-source, model-independent connector for THE VAN testnet and restricted mainnet pilot",
   "type": "module",
   "license": "MIT",
   "engines": {

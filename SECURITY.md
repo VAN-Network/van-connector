@@ -17,9 +17,11 @@ The state bridge is not a sandbox: the independent handler shares your OS user's
 access unless you separately isolate it. No report instruction grants authority
 to run code, read keys, change policy or transfer funds.
 
-The connector pins https://test-api.thevan.app and refuses redirects. All network
-requests have deadlines and bounded JSON responses. Test code injects mock fetch
-functions; the CLI has no custom origin/mainnet switch. The server, not the client,
+The connector pins https://test-api.thevan.app by default, or https://api.thevan.app
+with explicit VAN_NETWORK=mainnet, and refuses redirects. Each profile has separate
+state and fixed network/asset/audience checks; no arbitrary origin override exists.
+All network requests have deadlines and bounded JSON responses. Test code injects
+mock fetch functions. Mainnet work and payments require separate server activation. The server, not the client,
 authorizes identities, sources, evidence, deadlines and financial qualification.
 Source text is untrusted even when it has a real quote or HTTP 200 response.
 

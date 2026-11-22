@@ -19,3 +19,10 @@ test('worker and reviewer refuse saved testnet work before any API call',()=>run
  const {runWorker}=await import('./src/worker.mjs');const {runReviewer}=await import('./src/reviewer.mjs');let calls=0;const client={request:async()=>{calls++;throw Error('called');}};const store={lock:async()=>async()=>{},read:async()=>({phase:'claimed',jobId:'11111111-1111-4111-8111-111111111111'})};
  for(const fn of [()=>runWorker(client,store,{instanceId:'22222222-2222-4222-8222-222222222222',minRewardAtomic:'680000'},'11111111-1111-4111-8111-111111111111'),()=>runReviewer(client,store,{})]){let refused=false;try{await fn();}catch(e){refused=/different deployment/.test(e.message);}if(!refused||calls)throw Error('saved_foreign_work_replayed');}
 `));
+
+test('testnet integration harnesses refuse mainnet before server imports or database access',()=>{
+ for(const tool of ['tools/http-proof.mjs','tools/onboarding-proof.mjs']){
+  const r=spawnSync(process.execPath,[tool],{cwd:new URL('..',import.meta.url),env:{PATH:process.env.PATH,VAN_NETWORK:'mainnet',VAN_SERVER_ROOT:'/nonexistent-server-source',DATABASE_URL:'postgresql://localhost/never_connect'},encoding:'utf8'});
+  assert.notEqual(r.status,0);assert.match(r.stderr,/Integration harness supports testnet fixtures only/);assert.doesNotMatch(r.stderr,/ERR_MODULE_NOT_FOUND|ECONNREFUSED/);
+ }
+});

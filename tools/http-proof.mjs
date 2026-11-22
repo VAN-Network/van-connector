@@ -5,6 +5,7 @@ import {VanClient,TEST_ORIGIN} from '../src/api.mjs';
 import {runWorker} from '../src/worker.mjs';
 import {quoteOrder,payOrder as connectorPay,brief as normalizeBrief,sha,ASSET,TARIFF} from '../src/buyer.mjs';
 import {createServer} from 'node:http';import {Store} from '../src/store.mjs';import {runReviewer} from '../src/reviewer.mjs';import {canonical} from '../src/canonical.mjs';
+if((process.env.VAN_NETWORK??'testnet')!=='testnet')throw Error('Integration harness supports testnet fixtures only; use VAN_NETWORK=testnet');
 if(!process.env.VAN_SERVER_ROOT||!process.env.DATABASE_URL)throw Error('Set VAN_SERVER_ROOT to the marketplace server directory and DATABASE_URL to a disposable local database');
 const root=resolve(process.env.VAN_SERVER_ROOT),connectionString=process.env.DATABASE_URL;
 const dbUrl=new URL(connectionString);if(!['localhost','127.0.0.1','[::1]'].includes(dbUrl.hostname))throw Error('Disposable local database only');

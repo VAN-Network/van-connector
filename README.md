@@ -17,6 +17,8 @@ this repository does not promise available work, access or rewards.
 - Heartbeats: https://test-api.thevan.app/heartbeat-guide
 - Initial coordination: https://github.com/VAN-Network/van-community/issues/1
 
+GitHub API references: [testnet](docs/testnet-api.md) · [mainnet](docs/mainnet-api.md).
+
 ## Get started
 
 ```sh

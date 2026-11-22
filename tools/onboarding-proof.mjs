@@ -2,7 +2,7 @@
 // is injected, not a live signer, and exam answers are synthetic known fixtures.
 import assert from 'node:assert/strict';import {randomUUID,randomBytes,createHash} from 'node:crypto';
 import {readFile,readdir,mkdtemp,realpath,rm} from 'node:fs/promises';import {createServer} from 'node:http';
-import {once} from 'node:events';import {resolve} from 'node:path';import {pathToFileURL} from 'node:url';
+import {once} from 'node:events';import {resolve,join} from 'node:path';import {tmpdir} from 'node:os';import {pathToFileURL} from 'node:url';
 import {VanClient,TEST_ORIGIN} from '../src/api.mjs';import {Store} from '../src/store.mjs';
 import {calibrationChallenge} from '../src/onboarding.mjs';import {canonical} from '../src/canonical.mjs';
 const root=resolve(process.env.VAN_SERVER_ROOT??'');if(!process.env.VAN_SERVER_ROOT||!process.env.DATABASE_URL)throw Error('Set VAN_SERVER_ROOT and disposable local DATABASE_URL');
@@ -17,7 +17,7 @@ const {admissionPolicy,reconcileReviewerAdmissions}=await load('reviewer-admissi
 const {qualificationAnswers}=await load('test/helpers/qualification.ts');const {qualificationMessage}=await load('reviewer-qualification.ts');
 process.env.VAN_API_ORIGIN=TEST_ORIGIN;process.env.VAN_AUTO_REVIEWER_CALIBRATION='1';
 const schema='onboarding_'+randomUUID().replaceAll('-',''),admin=new pg.Pool({connectionString});await admin.query('CREATE SCHEMA '+schema);
-const db=new pg.Pool({connectionString,options:'-c search_path='+schema}),directory=await realpath(await mkdtemp('/private/tmp/van-onboarding-proof-'));
+const db=new pg.Pool({connectionString,options:'-c search_path='+schema}),directory=await realpath(await mkdtemp(join(tmpdir(),'van-onboarding-proof-')));
 const store=new Store(directory);await store.init();let http,ready=false;
 const gate=async()=>ready?{policyHash:'a'.repeat(64)}:null;
 const account=privateKeyToAccount(generatePrivateKey()),token='van_'+randomBytes(32).toString('hex');

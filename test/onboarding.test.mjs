@@ -1,5 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';
-import {randomUUID} from 'node:crypto';import {mkdtemp,realpath,rm} from 'node:fs/promises';
+import {randomUUID} from 'node:crypto';import {tmpdir} from 'node:os';import {join} from 'node:path';import {mkdtemp,realpath,rm} from 'node:fs/promises';
 import {Store} from '../src/store.mjs';import {canonical} from '../src/canonical.mjs';
 import {TEST_ORIGIN} from '../src/api.mjs';
 import {validateCalibrationChallenge,calibrationChallenge} from '../src/onboarding.mjs';
@@ -19,7 +19,7 @@ test('calibration signing rejects foreign contexts, payments, expiry and noncano
  assert.throws(()=>validateCalibrationChallenge({...valid,accessGranted:true},id,'exam'));
 });
 test('calibration helper reuses one context, respects its lock and never enrolls or claims work',async()=>{
- const root=await realpath(await mkdtemp('/private/tmp/van-onboarding-test-')),s=new Store(root),id=randomUUID();
+ const root=await realpath(await mkdtemp(join(tmpdir(),'van-onboarding-test-'))),s=new Store(root),id=randomUUID();
  await s.init();await s.write('enroll-prove-result.json',{requestId:id,role:'reviewer',status:'pending'});
  const calls=[],client={async request(path,body,options){calls.push({path,body,options});return challenge(body.requestId,body.operation);}};
  try{
@@ -35,7 +35,7 @@ test('calibration helper reuses one context, respects its lock and never enrolls
  }finally{await rm(root,{recursive:true,force:true});}
 });
 test('uncertain challenge response leaves no fabricated cache; exact input retries safely',async()=>{
- const root=await realpath(await mkdtemp('/private/tmp/van-onboarding-test-')),s=new Store(root),id=randomUUID();
+ const root=await realpath(await mkdtemp(join(tmpdir(),'van-onboarding-test-'))),s=new Store(root),id=randomUUID();
  await s.init();let calls=0;
  const client={async request(path,body){calls++;if(calls===1)throw Error('lost response');return challenge(body.requestId,body.operation);}};
  try{

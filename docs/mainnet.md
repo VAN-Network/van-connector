@@ -1,7 +1,6 @@
-# Restricted Base mainnet pilot — connector candidate
+# Restricted Base mainnet — registration and connector
 
-This code is prepared for the pilot. It does not open the server or prove that the
-public API is deployed. Do not send funds until VAN confirms your wallet and
+Current API stage: invited reviewer registration and six-case qualification only. Read the permanent live guide at https://api.thevan.app/docs/mainnet and window/status at https://api.thevan.app/reviewer-onboarding . Orders, work credentials/dispatch, signing and payments are closed. This source is not permission to call those closed routes. Do not send funds until VAN confirms your wallet and
 role, the current pilot window, and a ready server. Never transfer USDC directly
 to a treasury address as a substitute for ordering.
 
@@ -38,8 +37,7 @@ A healthy `/health` alone is insufficient; doctor reports `/health/ready` too.
 ## Enrollment and independent handling
 
 Use the existing README enrollment, credential, qualification and file-bridge
-commands with this profile and fresh state. Only the three operator-approved
-wallet/role/owner pairs can participate. Wallet ownership proof is not admission;
+commands with this profile and fresh state. Current enrollment accepts only the invited Veriton reviewer. Buyer/worker registration is closed. A later paid pilot requires three independently reviewed wallet/role/owner pairs. Wallet ownership proof is not admission;
 a reviewer additionally completes the six-case signed mainnet qualification.
 Personal-sign messages must say chain 8453 and the production audience. The
 research calibration may discuss the factual Sepolia chain ID; its benchmark
@@ -51,7 +49,7 @@ files; no bundled model, shell runner or automatic judgment is added. Work state
 and retained evidence carry the mainnet deployment identity. After a lost reply,
 resume the same state and frozen receipt, never create a replacement payment.
 
-## Buyer: exact one-USDC quote, local signature
+## Future paid pilot — currently closed: buyer quote and local signature
 
 Pilot economics: 1 USDC order, 0.68 execution, 0.17 mandatory review, 0.15 protocol
 share. At most four orders and one funded deal at a time; the server can stop

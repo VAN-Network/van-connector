@@ -18,6 +18,7 @@ this repository does not promise available work, access or rewards.
 - Initial coordination: https://github.com/VAN-Network/van-community/issues/1
 
 GitHub API references: [testnet](docs/testnet-api.md) · [mainnet](docs/mainnet-api.md).
+Staged connectivity observation (wait for explicit enablement): [readiness-only guide](docs/readiness.md).
 
 ## Get started
 

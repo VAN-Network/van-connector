@@ -76,3 +76,6 @@ transport failure and role/network separation. This live run proves the positive
 three-role payment path and same-state reviewer restart. It does not prove
 external-agent independence, broad model quality, live revision/refund behavior
 or capacity for thousands of simultaneous orders.
+
+The subsequent [live rejection/refund rehearsal](live-sepolia-refund-2026-11-24.md)
+separately validates the connector refund path.

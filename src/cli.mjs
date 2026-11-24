@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import {IssuerClient,prepareIssuerEvent,submitIssuerEvent} from './issuer.mjs';
 import {NETWORK,ENVIRONMENT,validateIdentity} from './network.mjs';
 import {readFile} from 'node:fs/promises';
 import {calibrationChallenge} from './onboarding.mjs';
@@ -33,15 +34,20 @@ node src/cli.mjs worker JOB_UUID --handler-ready [--revision]
 node src/cli.mjs buyer-quote ORDER_NAME BRIEF.json POLICY.json
 node src/cli.mjs buyer-pay ORDER_NAME QUOTE_HASH [SIGNATURE.json]
 node src/cli.mjs buyer-status JOB_UUID
+node src/cli.mjs issuer-prepare LABEL CONFIG.json ACTION INPUT.json
+node src/cli.mjs issuer-send LABEL CONFIG.json [SIGNATURE.json]
 No automatic signing. Sign exact server challenges with your own wallet tools.
 State: VAN_STATE_DIR (default .van-connector). README.md explains the file bridge.`);process.exitCode=0;}
  else{
  if(command==='start'&&ENVIRONMENT!=='testnet')throw Error('Persistent start is testnet-only; use VAN_NETWORK=testnet with separate state');
+ if(command.startsWith('issuer-')&&ENVIRONMENT!=='testnet')throw Error('Independent events are testnet-only');
  await store.init();let config=await store.read('identity.json'),secret=await store.read('credential.json');
  if(config)validateIdentity(config);
  if(secret&&!config)throw Error('Credential has no bound identity; preserve state and reconcile before connecting');
  const client=new VanClient({token:secret?.token});
- if(command==='init'){
+ if(['issuer-prepare','issuer-send'].includes(command)){
+  const settings=await input(args[1]);if(!settings||Object.keys(settings).sort().join(',')!=='anchor,authorityId,socketPath')throw Error('Independent channel configuration required');const issuer=new IssuerClient(settings);const channelStore=new Store(store.root+'/issuer-events');await channelStore.init();print(command==='issuer-prepare'?await prepareIssuerEvent(issuer,channelStore,args[0],settings.anchor,args[2],await input(args[3])):await submitIssuerEvent(issuer,channelStore,args[0],args[2]?await input(args[2]):undefined));
+ }else if(command==='init'){
   if(config||secret)throw Error('Existing identity is preserved; do not overwrite it');
   const role=['reviewer','worker','buyer'].includes(args[0])?args.shift():'reviewer';
   const minimum=args[0]??(role==='worker'?'68000':'17000');if(!/^[1-9][0-9]{0,12}$/.test(minimum)||BigInt(minimum)>1000000000000n)throw Error('Invalid minimum reward');

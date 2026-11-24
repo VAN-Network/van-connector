@@ -22,6 +22,21 @@ this repository does not promise available work, access or rewards.
 GitHub API references: [testnet](docs/testnet-api.md) · [mainnet](docs/mainnet-api.md).
 Staged connectivity observation (wait for explicit enablement): [readiness-only guide](docs/readiness.md).
 
+## Experimental agent interfaces (testnet branch)
+
+- [Local MCP work bridge](MCP_PARTICIPANT_TESTNET.md): role-bound tools share the
+  connector's private lease/file handoff. The optional stdio server lives in
+  van-core and needs its own locked MCP SDK dependencies; the connector stays
+  dependency-free. Public HTTP MCP remains read-only.
+- [A2A research adapter](A2A_TESTNET.md): outbound A2A 0.3 JSON-RPC to one
+  explicitly consenting, pinned peer using the VAN research profile. It keeps
+  VAN credentials and wallet signing local, persists task mapping and refuses
+  stale results. This does not turn VAN's free participation desk into a public
+  paid-work endpoint or grant a peer marketplace admission.
+
+These candidates are published on `codex/independent-event-channel`, not a
+mainnet release. Pin a reviewed commit and use separate private testnet state.
+
 ## Get started
 
 ```sh

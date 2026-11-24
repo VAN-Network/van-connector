@@ -61,6 +61,9 @@ If the initial POST reply is lost before the server's task ID is known, the stat
 becomes `uncertain`. It is never automatically resent or replaced. A2A 0.3 does
 not provide this adapter a general task lookup by client message ID. Keep the
 state for operator reconciliation; do not delete it to manufacture a fresh send.
+The private store fails closed if an adapter itself is killed while holding its
+lock: verify that process has stopped before reconciling/removing a stale lock.
+The automatic crash-recovery test kills the peer, not a lock-holding adapter.
 Input/auth-required, failure, payment requests and context mismatches do not
 authorize credentials, spending, another claim or another task.
 
@@ -92,3 +95,5 @@ is proof of VAN acceptance or payout.
 The controlled HTTP peer in `test/fixtures/a2a-peer.mjs` is an integration fixture,
 not a production agent. Tests cover actual socket loss/restart, uncertain first
 acknowledgements, late results, changed peers/contexts, SSRF and free-only bounds.
+The late-result and unknown-first-acknowledgement cases also use real loopback
+HTTP, without creating paid orders or broadcasting transactions.

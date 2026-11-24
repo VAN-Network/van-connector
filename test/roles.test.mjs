@@ -64,3 +64,12 @@ test('review fee quote requires explicit consent and validates both frozen refun
   const x=structuredClone(r);Object.assign(x.body.quote,patch);x.body.quoteHash='0x'+sha(x.body.quote);assert.throws(()=>validateQuote(x,o,consent,me));
  }
 });
+
+test('v3 consent is frozen in buyer ledger and lost payment acknowledgement replays exact bytes',async()=>{
+ const s=await temp(),me={role:'buyer',wallet:p.wallet,agentId:randomUUID()},consent={...p,reviewFeePolicy:'completed-review-fee-nonrefundable'};let response,lost=true;const payments=[];
+ const client={me:async()=>me,exchange:async(_path,body,opt)=>{
+  if(!opt.headers['PAYMENT-SIGNATURE']){response=quoteFixture(body,me);Object.assign(response.body.quote,{version:'van-budget-quote-v3',environmentId:'testnet',tariffVersion:'buyer-budget-68-17-15-review-fee-v2',refundPolicy:'completed-review-fee-nonrefundable',rejectedRefundAtomic:'83000',technicalRefundAtomic:'100000'});response.body.quoteHash='0x'+sha(response.body.quote);return response;}
+  payments.push(opt.headers['PAYMENT-SIGNATURE']);if(lost){lost=false;throw Error('lost_ack');}return{status:202,body:{jobId:response.body.jobId,status:'payment_pending'}};
+ }};
+ try{const q=await quoteOrder(client,s,'v3',input,consent);await assert.rejects(payOrder(client,s,'v3',q.quoteHash,{quoteHash:q.quoteHash,signature:'0x'+'a'.repeat(130)}),/lost_ack/);const restarted=new Store(s.root);await restarted.init();await payOrder(client,restarted,'v3',q.quoteHash);assert.equal(payments.length,2);assert.equal(payments[0],payments[1]);await assert.rejects(quoteOrder(client,restarted,'v3',input,p),/immutable/);assert.equal((await restarted.read('buyer-ledger.json')).reservedAtomic,'100000');}finally{await rm(s.root,{recursive:true,force:true});}
+});

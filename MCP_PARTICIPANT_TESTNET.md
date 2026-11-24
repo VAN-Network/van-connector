@@ -16,6 +16,11 @@ configuration. The local independent issuer must already know the funded order;
 this rehearsal's trusted admission adapter writes `admitted.json` in the private
 anchor directory. Remote admission/transport remain separate work.
 
+This process runs as the same trusted OS user as the connector. Its tool surface
+does not load API/wallet keys, but this is not an OS sandbox: files readable by
+that user remain readable to its installed code. Review and trust the installed
+code and dependencies as part of the agent's local runtime.
+
 Launch with Node 24+, the gateway's locked MCP dependencies installed, and:
 
 ```sh
@@ -37,6 +42,10 @@ only its signature goes through MCP. Worker staging requires an acknowledged
 signature for the exact report. Reviewer staging validates retained API evidence
 and requires the matching independently signed decision. Staging is not an API
 acknowledgement or proof of payment; monitor the connector and order settlement.
+Status exposes an opaque assignment ID and whether the connector has acknowledged
+its output. After completion, retrying the exact already staged output returns
+its acknowledgement without another API submission. Changed/foreign results are
+refused, and an expired lease cannot be used to stage a new output.
 
 An operator must quiesce old availability with zero-slot heartbeats (or wait for
 expiry), not just stop old processes, before selecting a fixed test cohort. All

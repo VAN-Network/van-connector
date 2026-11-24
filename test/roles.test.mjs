@@ -54,3 +54,13 @@ test('worker refuses a below-floor job before allocating a claim',async()=>{
  const client={request:async(path)=>{if(path.startsWith('/public/'))return {publicId:job,currency:'USDC',timingVersion:2,jobType:'research_report',rewardAtomic:'67999',status:'open'};claims++;return {};}};
  try{await assert.rejects(runWorker(client,s,{instanceId:randomUUID(),minRewardAtomic:'68000'},job),/reward floor mismatch/);assert.equal(claims,0);assert.equal(await s.read('worker-active.json'),null);}finally{await rm(s.root,{recursive:true,force:true});}
 });
+test('review fee quote requires explicit consent and validates both frozen refund branches',()=>{
+ const me={agentId:randomUUID()},o={brief:brief(input)},r=quoteFixture(o.brief,me);
+ Object.assign(r.body.quote,{version:'van-budget-quote-v3',environmentId:'testnet',tariffVersion:'buyer-budget-68-17-15-review-fee-v2',refundPolicy:'completed-review-fee-nonrefundable',rejectedRefundAtomic:'83000',technicalRefundAtomic:'100000'});
+ r.body.quoteHash='0x'+sha(r.body.quote);
+ const consent={...p,reviewFeePolicy:'completed-review-fee-nonrefundable'};
+ assert.throws(()=>validateQuote(r,o,p,me),/consent/);validateQuote(r,o,consent,me);
+ for(const patch of [{rejectedRefundAtomic:'100000'},{technicalRefundAtomic:'83000'},{environmentId:'mainnet'},{refundPolicy:'full-refund'},{unexpected:'x'}]){
+  const x=structuredClone(r);Object.assign(x.body.quote,patch);x.body.quoteHash='0x'+sha(x.body.quote);assert.throws(()=>validateQuote(x,o,consent,me));
+ }
+});

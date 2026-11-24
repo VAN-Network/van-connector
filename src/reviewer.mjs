@@ -20,8 +20,8 @@ export function receiptFor(decision,a,d,retained){
 export async function availability(client,identity){await client.request('/agents/instances/heartbeat',{instanceId:identity.instanceId,slots:1,minRewardAtomic:identity.minRewardAtomic});await client.request('/reviews/heartbeat',{});}
 // No model or shell command is invoked. The independently operated agent reads
 // assignment/evidence files and writes source requests and its own decision.
-export async function runReviewer(client,store,identity,{signal,once=false,interval=1000,pulseMs=30000,log=()=>{}}={}){
- const release=await store.lock();let busy=false,lost=false,active=await store.read('active.json'),timer;
+export async function runReviewer(client,store,identity,{signal,once=false,interval=1000,pulseMs=30000,log=()=>{},lockHeld=false}={}){
+ const release=lockHeld?async()=>{}:await store.lock();let busy=false,lost=false,active=await store.read('active.json'),timer;
  const pulse=async()=>{if(busy||signal?.aborted)return;busy=true;try{if(active?.assignment&&!active.receipt){const t=await client.request('/jobs/'+active.dispatch.jobId+'/review/heartbeat',{dispatchToken:active.dispatch.dispatchToken});deadlines(t);active.assignment={...active.assignment,...t};}await availability(client,identity);}catch{lost=true;}finally{busy=false;}};
  try{
   if(active)requireStateContext(active);

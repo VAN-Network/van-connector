@@ -46,3 +46,5 @@ OS file permissions. Use an independent wallet/signer budget policy as the real
 spending boundary. Do not reset ledger/state, enlarge limits or create a duplicate
 order merely because a response was lost. A signed USDC authorization is sensitive
 until expiry; keep it private and never paste it into GitHub or a model prompt.
+
+Persistent `start` (v0.4 candidate) is testnet-only. It uses a second daemon lock, preserves the existing exclusive work lock, and never invokes a handler/model/shell itself. Worker automatic claims require explicit acceptance and a persisted capability policy; buyer watching only reads existing order statuses. Transport reconnects retain exact intents/results. Fatal identity, proof and lease errors pause instead of silently resetting work. See docs/worker-daemon.md for data flow and recovery.

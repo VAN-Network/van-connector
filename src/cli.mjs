@@ -8,14 +8,16 @@ import {VanClient,TEST_ORIGIN} from './api.mjs';
 import {Store} from './store.mjs';
 import {runReviewer} from './reviewer.mjs';
 import {runWorker} from './worker.mjs';
+import {startDaemon} from './daemon.mjs';
 import {quoteOrder,payOrder,policy} from './buyer.mjs';
 const [command,...args]=process.argv.slice(2),store=new Store(resolve(process.env.VAN_STATE_DIR??(ENVIRONMENT==='mainnet'?'.van-connector-mainnet':'.van-connector')));
 const print=x=>console.log(JSON.stringify(x,null,2));
 async function input(file){if(!file)throw Error('JSON file required');const s=await readFile(file);if(s.length>131072)throw Error('Input too large');return JSON.parse(s.toString('utf8'));}
 try{
- if(!command||command==='help'){console.log(`THE VAN Connector v0.3.0 candidate (testnet/mainnet profiles; explicit bounded USDC authorization)
+ if(!command||command==='help'){console.log(`THE VAN Connector v0.4.0 candidate (testnet/mainnet profiles; explicit bounded USDC authorization)
 node src/cli.mjs init [reviewer|worker|buyer] [minimum-reward-atomic]
 node src/cli.mjs doctor
+node src/cli.mjs start [--handler-ready] [--accept-jobs --policy POLICY.json]
 node src/cli.mjs jobs
 node src/cli.mjs enroll-challenge ROLE WALLET
 node src/cli.mjs enroll-prove PROOF.json
@@ -34,6 +36,7 @@ node src/cli.mjs buyer-status JOB_UUID
 No automatic signing. Sign exact server challenges with your own wallet tools.
 State: VAN_STATE_DIR (default .van-connector). README.md explains the file bridge.`);process.exitCode=0;}
  else{
+ if(command==='start'&&ENVIRONMENT!=='testnet')throw Error('Persistent start is testnet-only; use VAN_NETWORK=testnet with separate state');
  await store.init();let config=await store.read('identity.json'),secret=await store.read('credential.json');
  if(config)validateIdentity(config);
  if(secret&&!config)throw Error('Credential has no bound identity; preserve state and reconcile before connecting');
@@ -43,6 +46,17 @@ State: VAN_STATE_DIR (default .van-connector). README.md explains the file bridg
   const role=['reviewer','worker','buyer'].includes(args[0])?args.shift():'reviewer';
   const minimum=args[0]??(role==='worker'?'68000':'17000');if(!/^[1-9][0-9]{0,12}$/.test(minimum)||BigInt(minimum)>1000000000000n)throw Error('Invalid minimum reward');
   const release=await store.lock();try{if(await store.read('identity.json')||await store.read('credential.json'))throw Error('Identity already exists');await store.write('credential.json',{token:'van_'+randomBytes(32).toString('hex')});await store.write('identity.json',{instanceId:randomUUID(),minRewardAtomic:minimum,role,...(ENVIRONMENT==='mainnet'?{environmentId:'mainnet'}:{}),profileId:NETWORK.profileId,chainId:NETWORK.chainId,origin:TEST_ORIGIN});}finally{await release();}print({initialized:true,state:store.root,note:'Token remains local. Complete wallet enrollment, calibration and operator admission.'});
+ }else if(command==='start'){
+  if(ENVIRONMENT!=='testnet')throw Error('Persistent start is testnet-only; use VAN_NETWORK=testnet with separate state');
+  if(!config||!secret)throw Error('Run init and complete admission before start');
+  const flags=new Set();let policyFile;
+  for(let i=0;i<args.length;i++){
+   const flag=args[i];if(!['--handler-ready','--accept-jobs','--policy'].includes(flag)||flags.has(flag))throw Error('Unsupported or repeated start option');flags.add(flag);
+   if(flag==='--policy'){policyFile=args[++i];if(!policyFile||policyFile.startsWith('--'))throw Error('Worker policy file required');}
+  }
+  if(config.role==='buyer'&&flags.size||config.role==='reviewer'&&(flags.has('--policy')||flags.has('--accept-jobs')))throw Error('Start options do not match identity role');
+  const abort=new AbortController();for(const s of ['SIGINT','SIGTERM'])process.once(s,()=>abort.abort());
+  await startDaemon(client,store,config,{signal:abort.signal,handlerReady:flags.has('--handler-ready'),acceptJobs:flags.has('--accept-jobs'),...(policyFile?{policy:await input(policyFile)}:{}),log:print});
  }else if(command==='doctor'){
   const health=await client.request('/health',undefined,{auth:false});let ready=null;if(ENVIRONMENT==='mainnet'){const r=await client.exchange('/health/ready',undefined,{auth:false});ready={httpStatus:r.status,...r.body};}let identity=null,access='not_admitted_or_no_credential';try{identity=await client.me();access='authenticated';}catch{}
   print({origin:TEST_ORIGIN,chainId:NETWORK.chainId,health,ready,initialized:!!config,access,identity,reviewerHandler:'External agent must read assignment/evidence and write decisions; no model bundled',payments:'buyer-pay requires exact quote approval, immutable limits and local signature',environment:ENVIRONMENT,mainnet:ENVIRONMENT==='mainnet'?'bounded pilot; server admission required':'select VAN_NETWORK=mainnet with separate state',onboarding:TEST_ORIGIN+'/reviewer-onboarding',activeState:!!await store.read('active.json')});

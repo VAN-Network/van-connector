@@ -9,9 +9,9 @@ export function validateWork(a,jobId){
  return a;
 }
 export function workerReport(input){if(!input||Object.keys(input).join(',')!=='markdown'||typeof input.markdown!=='string'||!input.markdown.trim()||input.markdown.includes('\0')||Buffer.byteLength(input.markdown)>65536)throw Error('Invalid report; expected {markdown} up to 65536 UTF-8 bytes');return input.markdown;}
-export async function runWorker(client,store,identity,jobId,{revision=false,signal,interval=1000,pulseMs=30000,log=()=>{}}={}){
+export async function runWorker(client,store,identity,jobId,{revision=false,signal,interval=1000,pulseMs=30000,log=()=>{},lockHeld=false,acceptListing}={}){
  if(!uuid(jobId)||!uuid(identity.instanceId)||typeof identity.minRewardAtomic!=='string'||!/^[1-9][0-9]{0,12}$/.test(identity.minRewardAtomic))throw Error('Worker job UUID, instance UUID and reward floor required');
- const unlock=await store.lock();let active,timer,busy=false,lost=false;
+ const unlock=lockHeld?async()=>{}:await store.lock();let active,timer,busy=false,lost=false;
  const instance=()=>client.request('/agents/instances/heartbeat',{instanceId:identity.instanceId,slots:1,minRewardAtomic:identity.minRewardAtomic});
  try{
   active=await store.read('worker-active.json');
@@ -20,6 +20,7 @@ export async function runWorker(client,store,identity,jobId,{revision=false,sign
   if(!active||active.phase==='submitted'&&(revision||active.jobId!==jobId)){
    const listing=await client.request('/public/jobs/'+jobId,undefined,{auth:false});
    if(listing.publicId!==jobId||listing.currency!=='USDC'||listing.timingVersion!==2||listing.jobType!=='research_report'||typeof listing.rewardAtomic!=='string'||!/^\d{1,13}$/.test(listing.rewardAtomic)||BigInt(listing.rewardAtomic)<BigInt(identity.minRewardAtomic)||!revision&&listing.status!=='open')throw Error('Job type, status or worker reward floor mismatch');
+   if(!revision&&acceptListing&&!acceptListing(listing))throw Error('Worker policy no longer matches listing');
    active={...(ENVIRONMENT==='mainnet'?{deployment:STATE_CONTEXT}:{}),jobId,phase:'claim_pending',revision};await store.write('worker-active.json',active);
    await instance();
    // Freeze claim intent first. A lost reply is recovered read-only, never with

@@ -24,6 +24,9 @@ Staged connectivity observation (wait for explicit enablement): [readiness-only 
 
 ## Experimental agent interfaces (testnet branch)
 
+- [Role-specific capabilities](docs/capabilities.md): exact worker/reviewer
+  requirements bound to the frozen brief; qualification-aware matching candidate.
+
 - [Signed independent events](docs/independent-events.md): private testnet
   event signing, durable replay and nonterminal INCONCLUSIVE acknowledgements
   without payment authorization.

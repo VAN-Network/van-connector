@@ -82,3 +82,6 @@ separately validates the connector refund path.
 
 The [reviewer disappearance rehearsal](live-sepolia-reviewer-timeout-2026-11-24.md)
 separately validates three natural lease expirations, full refund and stale-token fencing.
+
+The [worker restart rehearsal](live-sepolia-worker-restart-2026-11-24.md)
+separately validates graceful shutdown, the same retained lease and submission replay.

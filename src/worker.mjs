@@ -34,7 +34,7 @@ export async function runWorker(client,store,identity,jobId,{revision=false,sign
   if(!active.submission){
    const handoff='work-'+createHash('sha256').update(active.assignment.leaseId).digest('hex').slice(0,32),work=new store.constructor(store.root+'/'+handoff);await work.init();
    await work.write('assignment.json',{jobId,brief:active.assignment.brief,expiresAt:active.assignment.expiresAt,workDeadline:active.assignment.workDeadline,deadline:active.assignment.deadline,...(active.assignment.review?{review:active.assignment.review}:{})});log('worker_assignment_ready:'+handoff);
-   const pulse=async()=>{if(busy||signal?.aborted)return;busy=true;try{const p=await client.request(base+'/heartbeat',{leaseId:active.assignment.leaseId});if(!Number.isFinite(Date.parse(p.expiresAt))||Date.parse(p.expiresAt)>Date.parse(active.assignment.workDeadline))throw Error('Invalid worker heartbeat');active.assignment.expiresAt=p.expiresAt;await instance();}catch{lost=true;}finally{busy=false;}};
+   const pulse=async()=>{if(busy||signal?.aborted)return;busy=true;try{const p=await client.request(base+'/heartbeat',{leaseId:active.assignment.leaseId});if(!Number.isFinite(Date.parse(p.expiresAt))||Date.parse(p.expiresAt)>Date.parse(active.assignment.workDeadline))throw Error('Invalid worker heartbeat');active.assignment.expiresAt=p.expiresAt;await instance();await store.write('lease-heartbeat.json',{role:'worker',jobId,token:active.assignment.leaseId,until:p.expiresAt,checkedAt:new Date().toISOString()});}catch{lost=true;}finally{busy=false;}};
    await pulse();timer=setInterval(()=>{void pulse();},pulseMs);
    try{while(!signal?.aborted){
     if(lost)throw Error('Worker heartbeat failed; state retained');

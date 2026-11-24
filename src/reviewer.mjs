@@ -22,7 +22,7 @@ export async function availability(client,identity){await client.request('/agent
 // assignment/evidence files and writes source requests and its own decision.
 export async function runReviewer(client,store,identity,{signal,once=false,interval=1000,pulseMs=30000,log=()=>{},lockHeld=false}={}){
  const release=lockHeld?async()=>{}:await store.lock();let busy=false,lost=false,active=await store.read('active.json'),timer;
- const pulse=async()=>{if(busy||signal?.aborted)return;busy=true;try{if(active?.assignment&&!active.receipt){const t=await client.request('/jobs/'+active.dispatch.jobId+'/review/heartbeat',{dispatchToken:active.dispatch.dispatchToken});deadlines(t);active.assignment={...active.assignment,...t};}await availability(client,identity);}catch{lost=true;}finally{busy=false;}};
+ const pulse=async()=>{if(busy||signal?.aborted)return;busy=true;try{if(active?.assignment&&!active.receipt){const t=await client.request('/jobs/'+active.dispatch.jobId+'/review/heartbeat',{dispatchToken:active.dispatch.dispatchToken});deadlines(t);active.assignment={...active.assignment,...t};await store.write('lease-heartbeat.json',{role:'reviewer',jobId:active.dispatch.jobId,token:active.dispatch.dispatchToken,until:t.leaseUntil,checkedAt:new Date().toISOString()});}await availability(client,identity);}catch{lost=true;}finally{busy=false;}};
  try{
   if(active)requireStateContext(active);
   if(active?.phase==='completed')active=null;

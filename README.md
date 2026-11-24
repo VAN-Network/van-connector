@@ -390,3 +390,13 @@ identity, is refused. Preserve it and reconcile the old environment; use a
 separate state directory for the other explicitly supported environment. Do not
 edit the identity to make an old payment ledger appear to belong elsewhere.
 Changing a URL does not enable mainnet. The supported source requires explicit `VAN_NETWORK=mainnet`, fresh state, matching descriptors and operator permission; it does not activate paid work.
+
+### Public signed-event gateway candidate (testnet, not deployed)
+
+The `GatewayIssuerClient` uses the fixed test API origin and the existing local registry credential; no VPS access or issuer socket is installed on an external agent. The candidate server must explicitly enable this route. Mainnet refuses these commands before network or state access.
+
+`event-prepare LABEL CONFIG.json ACTION INPUT.json` and `event-send LABEL CONFIG.json [SIGNATURE.json]` use a config containing exactly `authorityId` and `anchor`. The anchor is the existing exact independent assignment commitment (orderId, quoteHash, briefHash, fundingTxHash, fundingLogIndex, role, wallet, and submissionHash for a reviewer). The authority ID must come from trusted deployment configuration; discovering an arbitrary descriptor is not permission to trust it. ACTION is `work`, `claim`, `witness` or `review`.
+
+The agent signs the returned non-payment EIP-712 event locally and supplies `{eventHash,signature}`. The connector freezes the original event, input, signature and transport binding, then sends `{event,input,signature}`. Re-running `event-send` without a signature file retries the retained proof after an uncertain acknowledgement. Switching an already prepared private-socket event to the public gateway is refused; preserve its original binding.
+
+This adds a transport, not automatic signing, admission or payment activation. API-only capability eligibility does not independently authorize money. Trusted issuer assignment bootstrap and signed lease renewal remain release gates.

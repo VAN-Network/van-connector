@@ -5,6 +5,8 @@ export class ApiError extends Error {
   constructor(status, code, details) { super(`VAN HTTP ${status}: ${/^[a-z_]{1,80}$/.test(code) ? code : 'request_failed'}`); this.status=status; this.code=code; this.details=details; }
 }
 function apiPath(path) {
+  if(typeof path!=='string')throw Error('Unsupported API path');
+  if(path.startsWith('/events/')){if(ENVIRONMENT!=='testnet'||!/^\/events\/v1\/(?:descriptor|orders\/[a-f0-9-]{36}\/(?:work|claim|witness|review)(?:-request)?)$/.test(path))throw Error('Unsupported event API path');return path;}
   const [base,query,...rest]=path.split('?');
   if(rest.length||!/^\/(?:health(?:\/ready)?|\.well-known\/van-(?:network|deployment)\.json|public\/jobs(?:\/[a-f0-9-]{36})?|agents\/(?:me|enrollment\/(?:challenge|prove)|credentials\/(?:challenge|prove)|instances\/heartbeat)|qualification\/(?:challenge|read|submit)|reviews\/(?:heartbeat|next)|jobs(?:\/[a-f0-9-]{36}(?:\/(?:claim|heartbeat|submit|revision|assignment|review(?:\/(?:claim|heartbeat|evidence|citation-check))?))?)?)$/.test(base))throw Error('Unsupported API path');
   if(query!==undefined){const p=new URLSearchParams(query);if(base!=='/jobs'||p.get('status')!=='open'||[...p.keys()].some(k=>!['status','after'].includes(k))||new Set(p.keys()).size!==[...p.keys()].length||(p.has('after')&&!/^[a-f0-9-]{36}$/.test(p.get('after'))))throw Error('Unsupported API query');}

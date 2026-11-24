@@ -1,5 +1,5 @@
 import test from'node:test';import assert from'node:assert/strict';import{randomUUID,createHash}from'node:crypto';import{mkdtemp,rm,realpath}from'node:fs/promises';import{tmpdir}from'node:os';import{spawnSync}from'node:child_process';
-import{eventSigningRequest,validateEventRequest,prepareIssuerEvent,submitIssuerEvent,IssuerClient}from'../src/issuer.mjs';import{Store}from'../src/store.mjs';
+import{eventSigningRequest,validateEventRequest,prepareIssuerEvent,submitIssuerEvent,IssuerClient,GatewayIssuerClient}from'../src/issuer.mjs';import{Store}from'../src/store.mjs';
 const authorityId=randomUUID(),orderId=randomUUID(),anchor={orderId,quoteHash:'0x'+'1'.repeat(64),briefHash:'2'.repeat(64),fundingTxHash:'0x'+'3'.repeat(64),fundingLogIndex:'1',role:'worker',wallet:'0x'+'4'.repeat(40)},input={markdown:'Independent worker report'};
 const body={schema:'van-issuer-event-v1',authorityId,environmentId:'testnet',audience:'https://test-api.thevan.app',orderId,quoteHash:anchor.quoteHash,briefHash:anchor.briefHash,fundingTxHash:anchor.fundingTxHash,fundingLogIndex:'1',kind:'worker_submission',workId:randomUUID(),workDeadline:1790000000000,submissionHash:createHash('sha256').update(input.markdown).digest('hex')};
 const response=()=>({body:structuredClone(body),signing:eventSigningRequest(authorityId,body)});
@@ -20,3 +20,11 @@ test('nonterminal signed INCONCLUSIVE acknowledgements are bound to their exact 
   else await assert.rejects(submitIssuerEvent(client,store,'review',{eventHash:p.eventHash,signature:'0x'+'a'.repeat(130)}),/acknowledgement changed/);
  }}finally{await rm(dir,{recursive:true,force:true});}
 });
+
+test('public gateway preserves the original signed envelope through lost acknowledgement and refuses descriptor drift',async()=>{
+ const dir=await realpath(await mkdtemp(tmpdir()+'/van-gateway-sdk-')),store=new Store(dir);await store.init();const payloads=[];let lose=true;
+ const descriptor={version:1,environmentId:'testnet',chainId:84532,audience:'https://test-api.thevan.app',authorityId,protocol:'van-public-events-v1',issuerProtocol:'van-direct-events-v1'};
+ const api={request:async(path,payload,options)=>{if(path==='/events/v1/descriptor'){assert.deepEqual(options,{auth:false});return descriptor;}if(path.endsWith('/work-request'))return response();payloads.push(structuredClone(payload));if(lose){lose=false;throw Error('lost_ack');}return body;}};
+ const client=new GatewayIssuerClient({api,authorityId});try{const p=await prepareIssuerEvent(client,store,'work',anchor,'work',input);await assert.rejects(submitIssuerEvent(client,store,'work',{eventHash:p.eventHash,signature:'0x'+'a'.repeat(130)}),/lost_ack/);await submitIssuerEvent(client,store,'work');assert.deepEqual(payloads[0],payloads[1]);assert.deepEqual(Object.keys(payloads[0]).sort(),['event','input','signature']);assert.deepEqual(payloads[0].event,body);await assert.rejects(client.exchange(orderId,'refund',{}),/Unsupported/);await assert.rejects(new GatewayIssuerClient({authorityId,api:{request:async()=>({...descriptor,authorityId:randomUUID()})}}).context(),/descriptor mismatch/);}finally{await rm(dir,{recursive:true,force:true});}
+});
+test('review requests accept the issuer retry range and reject the next attempt',()=>{const reviewer={...anchor,role:'reviewer',authorityId,submissionHash:'5'.repeat(64)},claim={...body,kind:'review_claim',leaseId:randomUUID(),attempt:9,reviewDeadline:1790000000000,submissionHash:reviewer.submissionHash};delete claim.workId;delete claim.workDeadline;validateEventRequest({body:claim,signing:eventSigningRequest(authorityId,claim)},reviewer,'claim',{});claim.attempt=10;assert.throws(()=>validateEventRequest({body:claim,signing:eventSigningRequest(authorityId,claim)},reviewer,'claim',{}),/assignment/);});

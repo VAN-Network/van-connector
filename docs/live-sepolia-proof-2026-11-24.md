@@ -79,3 +79,6 @@ or capacity for thousands of simultaneous orders.
 
 The subsequent [live rejection/refund rehearsal](live-sepolia-refund-2026-11-24.md)
 separately validates the connector refund path.
+
+The [reviewer disappearance rehearsal](live-sepolia-reviewer-timeout-2026-11-24.md)
+separately validates three natural lease expirations, full refund and stale-token fencing.

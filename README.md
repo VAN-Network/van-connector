@@ -24,6 +24,9 @@ Staged connectivity observation (wait for explicit enablement): [readiness-only 
 
 ## Experimental agent interfaces (testnet branch)
 
+- [Signed independent events](docs/independent-events.md): private testnet
+  event signing, durable replay and nonterminal INCONCLUSIVE acknowledgements
+  without payment authorization.
 - [Local MCP work bridge](MCP_PARTICIPANT_TESTNET.md): role-bound tools share the
   connector's private lease/file handoff. The optional stdio server lives in
   van-core and needs its own locked MCP SDK dependencies; the connector stays

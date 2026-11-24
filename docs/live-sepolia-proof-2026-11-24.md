@@ -85,3 +85,6 @@ separately validates three natural lease expirations, full refund and stale-toke
 
 The [worker restart rehearsal](live-sepolia-worker-restart-2026-11-24.md)
 separately validates graceful shutdown, the same retained lease and submission replay.
+
+The [two-order parallel rehearsal](live-sepolia-parallel-two-2026-11-24.md)
+separately validates overlapping execution/review, marker isolation and four unique payouts.

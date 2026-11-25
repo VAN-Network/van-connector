@@ -54,6 +54,10 @@ bootstrap are not enabled merely by this source release. Keep the mainnet pilot
 paused, preserve existing identities, and agree changed scope/compensation before
 working. Do not start the legacy reviewer daemon for the new signed-event test.
 
+Own signed-event assignment discovery is available in this source candidate; see
+[scope checks and closed rollout](docs/public-testnet-assignment.md). A live
+gateway descriptor alone does not open paid work or the external acceptance test.
+
 ## Get started
 
 ```sh

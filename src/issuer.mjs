@@ -27,6 +27,12 @@ export class GatewayIssuerClient{
  async exchange(orderId,action,input){if(!uuid(orderId)||!['work','claim','witness','review','work-request','claim-request','witness-request','review-request','renew','renew-request'].includes(action))throw Error('Unsupported public event route');await this.context();return this.api.request('/events/v1/orders/'+orderId+'/'+action,input);}
  eventPayload(state){return{event:state.request.body,input:state.input,signature:state.proof.signature};}
 }
+export async function discoverIssuerAssignment(api,{orderId,authorityId,role,wallet}){
+ if(!uuid(orderId)||!uuid(authorityId)||!['worker','reviewer'].includes(role)||!/^0x[a-f0-9]{40}$/i.test(wallet))throw Error('Pinned order, authority, role and own wallet required');
+ const client=new GatewayIssuerClient({api,authorityId});await client.context();const r=await api.request('/events/v1/orders/'+orderId+'/assignment');
+ if(!r||Object.keys(r).sort().join(',')!=='anchor,audience,authorityId,chainId,environmentId,version'||r.version!=='van-participant-assignment-v1'||r.environmentId!=='testnet'||r.chainId!==84532||r.audience!==NETWORK.audience||r.authorityId!==authorityId||r.anchor?.orderId!==orderId||r.anchor?.role!==role||r.anchor?.wallet!==wallet.toLowerCase())throw Error('Discovered assignment changed pinned participant scope');
+ const a=anchorFor(r.anchor,client);delete a.authorityId;return{authorityId,anchor:a};
+}
 function eventInput(action,input){
  const fields={work:['markdown'],claim:[],witness:['url'],review:['verdict','reason','checks'],renew:['leaseId','attempt','previousExpiresAt','renewalSequence']}[action];
  if(!fields||!input||Array.isArray(input)||Object.keys(input).sort().join(',')!==fields.sort().join(','))throw Error('Independent input contains unsupported fields');

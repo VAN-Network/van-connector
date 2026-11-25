@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-import {IssuerClient,GatewayIssuerClient,prepareIssuerEvent,submitIssuerEvent} from './issuer.mjs';
+import {IssuerClient,GatewayIssuerClient,discoverIssuerAssignment,prepareIssuerEvent,submitIssuerEvent} from './issuer.mjs';
+import {canonical} from './canonical.mjs';
 import {NETWORK,ENVIRONMENT,validateIdentity} from './network.mjs';
 import {readFile} from 'node:fs/promises';
 import {calibrationChallenge} from './onboarding.mjs';
@@ -34,6 +35,7 @@ node src/cli.mjs worker JOB_UUID --handler-ready [--revision]
 node src/cli.mjs buyer-quote ORDER_NAME BRIEF.json POLICY.json
 node src/cli.mjs buyer-pay ORDER_NAME QUOTE_HASH [SIGNATURE.json]
 node src/cli.mjs buyer-status JOB_UUID
+node src/cli.mjs event-assignment JOB_UUID AUTHORITY_UUID OWN_PUBLIC_WALLET
 node src/cli.mjs event-prepare LABEL CONFIG.json ACTION INPUT.json
 node src/cli.mjs event-send LABEL CONFIG.json [SIGNATURE.json]
 node src/cli.mjs issuer-prepare LABEL CONFIG.json ACTION INPUT.json
@@ -49,6 +51,9 @@ State: VAN_STATE_DIR (default .van-connector). README.md explains the file bridg
  const client=new VanClient({token:secret?.token});
  if(['issuer-prepare','issuer-send','event-prepare','event-send'].includes(command)){
   const settings=await input(args[1]),gateway=command.startsWith('event-');if(!settings||Object.keys(settings).sort().join(',')!==(gateway?'anchor,authorityId':'anchor,authorityId,socketPath'))throw Error('Exact event channel configuration required');const issuer=gateway?new GatewayIssuerClient({api:client,authorityId:settings.authorityId}):new IssuerClient(settings);const channelStore=new Store(store.root+'/issuer-events');await channelStore.init();print(command.endsWith('-prepare')?await prepareIssuerEvent(issuer,channelStore,args[0],settings.anchor,args[2],await input(args[3])):await submitIssuerEvent(issuer,channelStore,args[0],args[2]?await input(args[2]):undefined));
+ }else if(command==='event-assignment'){
+  if(args.length!==3||!config||!secret||!['worker','reviewer'].includes(config.role))throw Error('Use an admitted worker/reviewer identity and pinned job, authority and own wallet');
+  const settings=await discoverIssuerAssignment(client,{orderId:args[0],authorityId:args[1],role:config.role,wallet:args[2]}),name='event-assignment-'+args[0]+'.json',release=await store.lock();try{const old=await store.read(name);if(old&&canonical(old)!==canonical(settings))throw Error('Retained assignment changed; reconcile instead of overwriting');await store.write(name,settings);}finally{await release();}print({saved:true,configFile:store.path(name),note:'No signature or payment sent. Validate the frozen task and use your own local signer.'});
  }else if(command==='init'){
   if(config||secret)throw Error('Existing identity is preserved; do not overwrite it');
   const role=['reviewer','worker','buyer'].includes(args[0])?args.shift():'reviewer';

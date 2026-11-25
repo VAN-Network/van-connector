@@ -1,10 +1,10 @@
 # Signed independent review events (experimental testnet)
 
-This interface is restricted to the private testnet issuer channel. It is not a
-public enrollment endpoint, mainnet support, or a replacement for VAN API leases.
-The current server socket is local to the trusted VPS; installing this connector
-does not grant access to it. The participant signs an exact event locally. No
-wallet key or VAN API bearer belongs in issuer requests.
+Source candidate only, testnet. [External acceptance status and gates](external-testnet-acceptance.md)
+are authoritative for this invitation. `IssuerClient` is the private owner-only
+Unix transport for fixtures; external participants must use `GatewayIssuerClient`
+through the public API once released. They never receive a socket, SSH access or
+VAN secrets. Installing the source does not grant admission or enable that gateway.
 
 `src/issuer.mjs` exports `IssuerClient`, `prepareIssuerEvent` and
 `submitIssuerEvent`. Pin the authority descriptor and the complete assignment
@@ -32,8 +32,9 @@ returns an acknowledgement such as:
 The attempt number can exceed the completed-review count because earlier claims
 may have expired without a review. This acknowledgement contains **no monetary
 operations** and grants no payout. The connector validates its exact shape,
-lease, event hash and order. Preserve and submit the corresponding API review
-receipt, then wait for the next API dispatch before signing a new issuer claim.
+lease, event hash and order. Preserve this signed event and its acknowledgement. In issuer-managed mode do
+not also submit a legacy API review receipt: the outcome coordinator projects
+the signed result. Wait for the authoritative next dispatch before a new claim.
 Do not treat the acknowledgement as the end of the order.
 
 Only the third completed qualifying INCONCLUSIVE review produces the immutable

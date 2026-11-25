@@ -1,0 +1,13 @@
+import{ENVIRONMENT,NETWORK,validateDescriptor,validateDeploymentDescriptor}from'../src/network.mjs';
+import{pathToFileURL}from'node:url';
+const origin='https://test-api.thevan.app';
+async function read(fetchImpl,path){const r=await fetchImpl(origin+path,{method:'GET',redirect:'error',signal:AbortSignal.timeout(10000),headers:{Accept:'application/json, text/plain'}});let size=0,parts=[];if(r.body)for await(const chunk of r.body){size+=chunk.byteLength;if(size>262144)throw Error('Public response too large');parts.push(chunk);}return{status:r.status,text:Buffer.concat(parts).toString('utf8')};}
+export async function externalTestnetPreflight(fetchImpl=fetch){
+ if(ENVIRONMENT!=='testnet'||NETWORK.chainId!==84532||NETWORK.audience!==origin)throw Error('External acceptance preflight is testnet-only');
+ const network=await read(fetchImpl,'/.well-known/van-network.json');if(network.status!==200)throw Error('Network descriptor unavailable');validateDescriptor(JSON.parse(network.text));
+ const deployment=await read(fetchImpl,'/.well-known/van-deployment.json');if(deployment.status!==200)throw Error('Deployment descriptor unavailable');validateDeploymentDescriptor(JSON.parse(deployment.text));
+ const guide=await read(fetchImpl,'/reviewer-onboarding'),health=await read(fetchImpl,'/health/ready'),gateway=await read(fetchImpl,'/events/v1/descriptor');let signedGatewayDescriptorValid=false;
+ if(gateway.status===200){let d;try{d=JSON.parse(gateway.text);}catch{}signedGatewayDescriptorValid=!!d&&d.version===1&&d.environmentId==='testnet'&&d.chainId===84532&&d.audience===origin&&d.protocol==='van-public-events-v1'&&d.issuerProtocol==='van-direct-events-v1'&&/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(d.authorityId);}
+ return{checkedAt:new Date().toISOString(),environment:'testnet',chainId:84532,origin,networkVerified:true,qualificationGuideAvailable:guide.status===200&&guide.text.includes(origin),healthReadyHttp:health.status,signedGatewayHttp:gateway.status,signedGatewayDescriptorValid,fullDealAuthorized:false,nextStep:signedGatewayDescriptorValid?'await_explicit_assignment_and_admission':'await_public_signed_gateway_release',credentialsSent:false,walletSignaturesRequested:false,paymentSent:false,note:'Read-only observation. A live descriptor does not prove assignment bootstrap, admission, supply, funding or settlement readiness.'};
+}
+if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){try{console.log(JSON.stringify(await externalTestnetPreflight(),null,2));}catch(e){console.error(JSON.stringify({error:e.message,credentialsSent:false,paymentSent:false}));process.exitCode=1;}}

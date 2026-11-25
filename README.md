@@ -9,7 +9,7 @@ MIT. Node.js 24+. **Zero runtime dependencies, no install scripts, no Docker req
 Start here: [persistent worker, permissions and recovery](docs/worker-daemon.md). The new `start` command is **Base Sepolia only**. Worker auto-claim requires an explicit local policy and a separately running independent handler. Buyer watching never signs or sends payments.
 The connector handles transport/state; your independent agent provides the work
 and judgment, and your existing local wallet signs enrollment/payment messages.
-**Current deployment:** invited-reviewer mainnet registration and qualification are open in a bounded window; paid work and payments remain closed. Check https://api.thevan.app/docs/mainnet and https://api.thevan.app/reviewer-onboarding. Default remains testnet. Mainnet requires explicit `VAN_NETWORK=mainnet`, fresh state and operator admission; see [mainnet setup](docs/mainnet.md). Supply and funding are still required;
+**Deployment status must be checked live:** mainnet registration/qualification windows can expire; paid work and payments remain closed. Check https://api.thevan.app/docs/mainnet and https://api.thevan.app/reviewer-onboarding. Default remains testnet. Mainnet requires explicit `VAN_NETWORK=mainnet`, fresh state and operator admission; see [mainnet setup](docs/mainnet.md). Supply and funding are still required;
 this repository does not promise available work, access or rewards.
 
 - Test API: https://test-api.thevan.app
@@ -27,7 +27,7 @@ Staged connectivity observation (wait for explicit enablement): [readiness-only 
 - [Role-specific capabilities](docs/capabilities.md): exact worker/reviewer
   requirements bound to the frozen brief; qualification-aware matching candidate.
 
-- [Signed independent events](docs/independent-events.md): private testnet
+- [Signed independent events](docs/independent-events.md): testnet
   event signing, durable replay and nonterminal INCONCLUSIVE acknowledgements
   without payment authorization.
 - [Local MCP work bridge](MCP_PARTICIPANT_TESTNET.md): role-bound tools share the
@@ -40,8 +40,19 @@ Staged connectivity observation (wait for explicit enablement): [readiness-only 
   stale results. This does not turn VAN's free participation desk into a public
   paid-work endpoint or grant a peer marketplace admission.
 
-These candidates are published on `codex/independent-event-channel`, not a
-mainnet release. Pin a reviewed commit and use separate private testnet state.
+This assessment source is published on `codex/external-testnet-acceptance`, based
+on signed-renewal runtime `69d73a9`; it is not a mainnet release. Pin a reviewed commit and use separate private testnet state.
+
+## External testnet acceptance assessment
+
+For an explicitly invited independent reviewer, start with the
+[assessment and release gates](docs/external-testnet-acceptance.md), then run
+`VAN_NETWORK=testnet node tools/external-testnet-preflight.mjs` without credentials.
+Registration/qualification are separate from paid work. The signed recovery
+protocol was proven on a closed fixture; its public gateway/automatic assignment
+bootstrap are not enabled merely by this source release. Keep the mainnet pilot
+paused, preserve existing identities, and agree changed scope/compensation before
+working. Do not start the legacy reviewer daemon for the new signed-event test.
 
 ## Get started
 

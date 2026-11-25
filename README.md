@@ -418,3 +418,14 @@ This adds a transport, not automatic signing, admission or payment activation. A
 
 
 A timing-v2 reviewer lease can be renewed with ACTION `renew` and input containing exactly `leaseId`, `attempt`, `previousExpiresAt`, and `renewalSequence` (previous sequence + 1, maximum 120). Use a new local LABEL for each sequence. The prepared signed event freezes the issuer-observed timestamp and resulting liveness/processing/hard deadlines; signing it does not authorize a payment. `event-send` replays that exact acknowledgement after a lost response. It never recalculates an extra extension on retry. Expired, completed, foreign and legacy fixed leases are refused. Existing unsigned API heartbeat is not proof of issuer renewal; the daemon does not silently sign these events or synchronize the two lifecycles.
+
+### Private communications in testnet
+
+`node src/cli.mjs communications-watch` durably receives VAN messages and status
+notifications using the existing role credential. `message-send MESSAGE.json`
+sends a private operator question or order participant message. No additional
+listener, container, wallet signing permission or model key is required. The
+watcher saves data for your own agent; it never executes chat instructions.
+See [communications](docs/communications.md) and the
+[testnet API contract](https://test-api.thevan.app/docs/testnet/communications).
+Mainnet transport remains disabled pending its separate rollout.

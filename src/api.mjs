@@ -6,6 +6,13 @@ export class ApiError extends Error {
 }
 function apiPath(path) {
   if(typeof path!=='string')throw Error('Unsupported API path');
+  if(path.startsWith('/communications/')){
+    if(ENVIRONMENT!=='testnet')throw Error('Communications are testnet-only');
+    const [base,query,...extra]=path.split('?');
+    if(extra.length||!['/communications/v1/inbox','/communications/v1/ack','/communications/v1/messages'].includes(base))throw Error('Unsupported communications path');
+    if(query!==undefined){const q=new URLSearchParams(query);if(base!=='/communications/v1/inbox'||new Set(q.keys()).size!==[...q.keys()].length||[...q.keys()].some(k=>!['after','wait','limit'].includes(k))||q.has('after')&&!/^(0|[1-9][0-9]{0,18})$/.test(q.get('after'))||q.has('wait')&&(!/^\d{1,2}$/.test(q.get('wait'))||+q.get('wait')>25)||q.has('limit')&&(!/^\d{1,3}$/.test(q.get('limit'))||+q.get('limit')<1||+q.get('limit')>100))throw Error('Unsupported communications query');}
+    return path;
+  }
   if(path.startsWith('/events/')){if(ENVIRONMENT!=='testnet'||!/^\/events\/v1\/(?:descriptor|orders\/[a-f0-9-]{36}\/(?:(?:work|claim|witness|review|renew)(?:-request)?|assignment))$/.test(path))throw Error('Unsupported event API path');return path;}
   const [base,query,...rest]=path.split('?');
   if(rest.length||!/^\/(?:health(?:\/ready)?|\.well-known\/van-(?:network|deployment)\.json|public\/jobs(?:\/[a-f0-9-]{36})?|agents\/(?:me|enrollment\/(?:challenge|prove)|credentials\/(?:challenge|prove)|instances\/heartbeat)|qualification\/(?:challenge|read|submit)|reviews\/(?:heartbeat|next)|jobs(?:\/[a-f0-9-]{36}(?:\/(?:claim|heartbeat|submit|revision|assignment|review(?:\/(?:claim|heartbeat|evidence|citation-check))?))?)?)$/.test(base))throw Error('Unsupported API path');
@@ -28,11 +35,11 @@ export class VanClient {
     if(options.auth!==false&&!/^van_[a-f0-9]{64}$/.test(this.token??''))throw Error('Local API token required; complete enrollment/admission first');
     await this.context();return this.#transport(path,body,options);
   }
-  async #transport(path, body, {auth=true,headers={}}={}) {
+  async #transport(path, body, {auth=true,headers={},signal}={}) {
     apiPath(path);
     if(auth&&!/^van_[a-f0-9]{64}$/.test(this.token??''))throw Error('Local API token required; complete enrollment/admission first');
     for(const [k,v] of Object.entries(headers))if(!['Idempotency-Key','PAYMENT-SIGNATURE'].includes(k)||typeof v!=='string'||/[\r\n]/.test(v)||v.length>(k==='Idempotency-Key'?128:16384))throw Error('Unsupported request header');
-    const r=await this.fetch(TEST_ORIGIN+path,{method:body===undefined?'GET':'POST',redirect:'error',signal:AbortSignal.timeout(15000),headers:{Accept:'application/json',...(body!==undefined?{'Content-Type':'application/json'}:{}),...(auth?{Authorization:'Bearer '+this.token}:{}),...headers},...(body!==undefined?{body:JSON.stringify(body)}:{})});
+    const r=await this.fetch(TEST_ORIGIN+path,{method:body===undefined?'GET':'POST',redirect:'error',signal:signal?AbortSignal.any([signal,AbortSignal.timeout(path.startsWith('/communications/')?35000:15000)]):AbortSignal.timeout(path.startsWith('/communications/')?35000:15000),headers:{Accept:'application/json',...(body!==undefined?{'Content-Type':'application/json'}:{}),...(auth?{Authorization:'Bearer '+this.token}:{}),...headers},...(body!==undefined?{body:JSON.stringify(body)}:{})});
     const reader=r.body?.getReader();let size=0,chunks=[];
     if(reader)for(;;){const {done,value}=await reader.read();if(done)break;size+=value.byteLength;if(size>2*1024*1024){await reader.cancel();throw Error('API response too large');}chunks.push(value);}
     let data;try{data=JSON.parse(Buffer.concat(chunks).toString('utf8'));}catch{throw Error('Invalid API response');}

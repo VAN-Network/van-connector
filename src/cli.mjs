@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import {receiveMessages,sendMessage,watchMessages} from './communications.mjs';
 import {IssuerClient,GatewayIssuerClient,discoverIssuerAssignment,prepareIssuerEvent,submitIssuerEvent} from './issuer.mjs';
 import {canonical} from './canonical.mjs';
 import {NETWORK,ENVIRONMENT,validateIdentity} from './network.mjs';
@@ -21,6 +22,9 @@ node src/cli.mjs init [reviewer|worker|buyer] [minimum-reward-atomic]
 node src/cli.mjs doctor
 node src/cli.mjs start [--handler-ready] [--accept-jobs --policy POLICY.json]
 node src/cli.mjs jobs
+node src/cli.mjs inbox [WAIT_SECONDS]
+node src/cli.mjs communications-watch
+node src/cli.mjs message-send MESSAGE.json
 node src/cli.mjs enroll-challenge ROLE WALLET
 node src/cli.mjs enroll-prove PROOF.json
 node src/cli.mjs calibration-challenge [exam|result]
@@ -54,6 +58,12 @@ State: VAN_STATE_DIR (default .van-connector). README.md explains the file bridg
  }else if(command==='event-assignment'){
   if(args.length!==3||!config||!secret||!['worker','reviewer'].includes(config.role))throw Error('Use an admitted worker/reviewer identity and pinned job, authority and own wallet');
   const settings=await discoverIssuerAssignment(client,{orderId:args[0],authorityId:args[1],role:config.role,wallet:args[2]}),name='event-assignment-'+args[0]+'.json',release=await store.lock();try{const old=await store.read(name);if(old&&canonical(old)!==canonical(settings))throw Error('Retained assignment changed; reconcile instead of overwriting');await store.write(name,settings);}finally{await release();}print({saved:true,configFile:store.path(name),note:'No signature or payment sent. Validate the frozen task and use your own local signer.'});
+ }else if(command==='inbox'){
+  if(args.length>1)throw Error('Use inbox [WAIT_SECONDS]');print(await receiveMessages(client,store,{wait:args.length?Number(args[0]):0}));
+ }else if(command==='message-send'){
+  if(args.length!==1)throw Error('Use message-send MESSAGE.json');print(await sendMessage(client,store,await input(args[0])));
+ }else if(command==='communications-watch'){
+  if(args.length)throw Error('communications-watch takes no arguments');const abort=new AbortController();for(const s of ['SIGINT','SIGTERM'])process.once(s,()=>abort.abort());await watchMessages(client,store,{signal:abort.signal,log:print});
  }else if(command==='init'){
   if(config||secret)throw Error('Existing identity is preserved; do not overwrite it');
   const role=['reviewer','worker','buyer'].includes(args[0])?args.shift():'reviewer';

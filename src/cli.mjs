@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import {receiveMessages,sendMessage,watchMessages} from './communications.mjs';
-import {IssuerClient,GatewayIssuerClient,discoverIssuerAssignment,prepareIssuerEvent,submitIssuerEvent} from './issuer.mjs';
+import {IssuerClient,GatewayIssuerClient,discoverIssuerAssignment,retainIssuerAssignment,prepareIssuerEvent,submitIssuerEvent} from './issuer.mjs';
 import {canonical} from './canonical.mjs';
 import {NETWORK,ENVIRONMENT,validateIdentity} from './network.mjs';
 import {readFile} from 'node:fs/promises';
@@ -57,7 +57,7 @@ State: VAN_STATE_DIR (default .van-connector). README.md explains the file bridg
   const settings=await input(args[1]),gateway=command.startsWith('event-');if(!settings||Object.keys(settings).sort().join(',')!==(gateway?'anchor,authorityId':'anchor,authorityId,socketPath'))throw Error('Exact event channel configuration required');const issuer=gateway?new GatewayIssuerClient({api:client,authorityId:settings.authorityId}):new IssuerClient(settings);const channelStore=new Store(store.root+'/issuer-events');await channelStore.init();print(command.endsWith('-prepare')?await prepareIssuerEvent(issuer,channelStore,args[0],settings.anchor,args[2],await input(args[3])):await submitIssuerEvent(issuer,channelStore,args[0],args[2]?await input(args[2]):undefined));
  }else if(command==='event-assignment'){
   if(args.length!==3||!config||!secret||!['worker','reviewer'].includes(config.role))throw Error('Use an admitted worker/reviewer identity and pinned job, authority and own wallet');
-  const settings=await discoverIssuerAssignment(client,{orderId:args[0],authorityId:args[1],role:config.role,wallet:args[2]}),name='event-assignment-'+args[0]+'.json',release=await store.lock();try{const old=await store.read(name);if(old&&canonical(old)!==canonical(settings))throw Error('Retained assignment changed; reconcile instead of overwriting');await store.write(name,settings);}finally{await release();}print({saved:true,configFile:store.path(name),note:'No signature or payment sent. Validate the frozen task and use your own local signer.'});
+  const retained=await retainIssuerAssignment(client,store,{orderId:args[0],authorityId:args[1],role:config.role,wallet:args[2]});print({...retained,note:'No signature or payment sent. Validate the frozen task and use your own local signer.'});
  }else if(command==='inbox'){
   if(args.length>1)throw Error('Use inbox [WAIT_SECONDS]');print(await receiveMessages(client,store,{wait:args.length?Number(args[0]):0}));
  }else if(command==='message-send'){

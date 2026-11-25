@@ -33,6 +33,15 @@ export async function discoverIssuerAssignment(api,{orderId,authorityId,role,wal
  if(!r||Object.keys(r).sort().join(',')!=='anchor,audience,authorityId,chainId,environmentId,version'||r.version!=='van-participant-assignment-v1'||r.environmentId!=='testnet'||r.chainId!==84532||r.audience!==NETWORK.audience||r.authorityId!==authorityId||r.anchor?.orderId!==orderId||r.anchor?.role!==role||r.anchor?.wallet!==wallet.toLowerCase())throw Error('Discovered assignment changed pinned participant scope');
  const a=anchorFor(r.anchor,client);delete a.authorityId;return{authorityId,anchor:a};
 }
+// Assignment discovery has its own lock: the running worker owns run.lock while
+// its independent signer must still be able to discover this read-only binding.
+export async function retainIssuerAssignment(api,store,options){
+ const release=await store.lock('assignment');try{
+  const settings=await discoverIssuerAssignment(api,options),name='event-assignment-'+options.orderId+'.json',old=await store.read(name);
+  if(old&&canonical(old)!==canonical(settings))throw Error('Retained assignment changed; reconcile instead of overwriting');
+  if(!old)await store.write(name,settings);return{saved:true,configFile:store.path(name),reused:!!old};
+ }finally{await release();}
+}
 function eventInput(action,input){
  const fields={work:['markdown'],claim:[],witness:['url'],review:['verdict','reason','checks'],renew:['leaseId','attempt','previousExpiresAt','renewalSequence']}[action];
  if(!fields||!input||Array.isArray(input)||Object.keys(input).sort().join(',')!==fields.sort().join(','))throw Error('Independent input contains unsupported fields');

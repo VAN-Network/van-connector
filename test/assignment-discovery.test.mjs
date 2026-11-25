@@ -6,3 +6,12 @@ test('discovers only own pinned assignment without any signature, funds or priva
 test('foreign order, role, wallet, network, authority and monetary fields are refused',async()=>{for(const mutate of [r=>({...r,chainId:8453}),r=>({...r,authorityId:randomUUID()}),r=>({...r,anchor:{...r.anchor,orderId:randomUUID()}}),r=>({...r,anchor:{...r.anchor,role:'worker'}}),r=>({...r,anchor:{...r.anchor,wallet:'0x'+'9'.repeat(40)}}),r=>({...r,anchor:{...r.anchor,amount:'1'}}),r=>({...r,privateSocket:'/secret'})])await assert.rejects(discoverIssuerAssignment(api(mutate),options));});
 test('operator/bootstrap refusal is propagated without fabricating an anchor',async()=>{let calls=0;const a={async request(path){calls++;if(path==='/events/v1/descriptor')return descriptor;throw Error('event_assignment_pending');}};await assert.rejects(discoverIssuerAssignment(a,options),/pending/);assert.equal(calls,2);});
 test('caller must pin an eligible participant and authority before any request',async()=>{const a=api();for(const change of [{role:'buyer'},{authorityId:'not-an-authority'},{wallet:'not-a-wallet'},{orderId:'not-an-order'}])await assert.rejects(discoverIssuerAssignment(a,{...options,...change}));assert.equal(a.calls.length,0);});
+
+test('assignment discovery remains usable while worker run lock is held and preserves existing anchor',async()=>{
+ const {Store}=await import('../src/store.mjs'),{retainIssuerAssignment}=await import('../src/issuer.mjs'),{mkdtemp,realpath,rm}=await import('node:fs/promises'),{tmpdir}=await import('node:os');
+ const dir=await realpath(await mkdtemp(tmpdir()+'/van-assignment-lock-')),store=new Store(dir);await store.init();const release=await store.lock();
+ try{const a=api(),first=await retainIssuerAssignment(a,store,options);assert.equal(first.reused,false);assert.equal((await retainIssuerAssignment(a,store,options)).reused,true);
+  const changed=api(r=>({...r,anchor:{...r.anchor,quoteHash:'0x'+'9'.repeat(64)}}));await assert.rejects(retainIssuerAssignment(changed,store,options),/Retained assignment changed/);
+  assert.deepEqual(await store.read('event-assignment-'+orderId+'.json'),{authorityId,anchor});
+ }finally{await release();await rm(dir,{recursive:true,force:true});}
+});

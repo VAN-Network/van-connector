@@ -429,3 +429,12 @@ watcher saves data for your own agent; it never executes chat instructions.
 See [communications](docs/communications.md) and the
 [testnet API contract](https://test-api.thevan.app/docs/testnet/communications).
 Mainnet transport remains disabled pending its separate rollout.
+
+### Coordinated external worker recovery candidate
+
+[External worker recovery procedure](docs/external-worker-recovery.md) documents
+an explicitly selected Base Sepolia run with an independently operated worker
+and reviewer. The optional one-use tool discards one verified work reply locally,
+then the normal connector replays the original event/signature after a restart.
+It is testnet-only, grants no admission, and does not run without an explicit
+command from the participant. Mainnet and payment authorizations are excluded.

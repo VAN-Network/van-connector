@@ -21,3 +21,7 @@ test('communications transport refuses extra destinations and invalid queries be
  let calls=0;const c=new VanClient({token:'van_'+'a'.repeat(64),fetchImpl:async()=>{calls++;throw Error('unexpected transport');}});
  for(const path of ['/communications/v1/inbox?after=1&after=2','/communications/v1/inbox?wait=26','/communications/v1/messages?recipient=foreign','/communications/v1/delete','/communications/v1/inbox?limit=0'])await assert.rejects(c.request(path));assert.equal(calls,0);
 });
+test('malformed control text is refused without sending credentials or allocating local state',async()=>{
+ const client={me:()=>{throw Error('must not authenticate invalid input');}};
+ for(const text of [String.fromCharCode(1).repeat(4096),String.fromCharCode(0),String.fromCharCode(0xd800)])await assert.rejects(sendMessage(client,{}, {clientMessageId:randomUUID(),text}),/Invalid outbound message/);
+});

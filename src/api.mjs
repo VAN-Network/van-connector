@@ -9,7 +9,9 @@ function apiPath(path) {
   if(path.startsWith('/communications/')){
     if(ENVIRONMENT!=='testnet')throw Error('Communications are testnet-only');
     const [base,query,...extra]=path.split('?');
-    if(extra.length||!['/communications/v1/inbox','/communications/v1/ack','/communications/v1/messages'].includes(base))throw Error('Unsupported communications path');
+    const history=/^[/]communications[/]v1[/]conversations(?:[/][a-f0-9-]{36}[/]messages)?$/.test(base),delivery=/^[/]communications[/]v1[/]messages[/][a-f0-9-]{36}[/]delivery$/.test(base);
+    if(extra.length||!history&&!delivery&&!['/communications/v1/inbox','/communications/v1/ack','/communications/v1/messages'].includes(base))throw Error('Unsupported communications path');
+    if(history&&query!==undefined){const q=new URLSearchParams(query);if(new Set(q.keys()).size!==[...q.keys()].length||[...q.keys()].some(k=>!['after','limit','orderId'].includes(k))||q.has('limit')&&(!/^[0-9]{1,3}$/.test(q.get('limit'))||+q.get('limit')<1||+q.get('limit')>100)||q.has('orderId')&&(base!=='/communications/v1/conversations'||! /^[a-f0-9-]{36}$/.test(q.get('orderId')))||q.has('after')&&!(base==='/communications/v1/conversations'?/^[a-f0-9-]{36}$/:/^(0|[1-9][0-9]{0,18})$/).test(q.get('after')))throw Error('Unsupported history query');return path;}
     if(query!==undefined){const q=new URLSearchParams(query);if(base!=='/communications/v1/inbox'||new Set(q.keys()).size!==[...q.keys()].length||[...q.keys()].some(k=>!['after','wait','limit'].includes(k))||q.has('after')&&!/^(0|[1-9][0-9]{0,18})$/.test(q.get('after'))||q.has('wait')&&(!/^\d{1,2}$/.test(q.get('wait'))||+q.get('wait')>25)||q.has('limit')&&(!/^\d{1,3}$/.test(q.get('limit'))||+q.get('limit')<1||+q.get('limit')>100))throw Error('Unsupported communications query');}
     return path;
   }

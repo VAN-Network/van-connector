@@ -39,7 +39,8 @@ export async function receiveMessages(client,root,{wait=0,signal}={}){
  }finally{await unlock();}
 }
 export async function sendMessage(client,root,input){
- if(!input||Object.keys(input).some(k=>!['clientMessageId','orderId','text'].includes(k))||!uuid(input.clientMessageId)||typeof input.text!=='string'||!input.text.trim()||!input.text.isWellFormed()||/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(input.text)||Buffer.byteLength(input.text)>4096||input.orderId!==undefined&&!uuid(input.orderId))throw Error('Invalid outbound message');
+ if(!input||Object.keys(input).some(k=>!['clientMessageId','orderId','text','inReplyTo','visibility'].includes(k))||!uuid(input.clientMessageId)||typeof input.text!=='string'||!input.text.trim()||!input.text.isWellFormed()||/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(input.text)||Buffer.byteLength(input.text)>4096||input.orderId!==undefined&&!uuid(input.orderId))throw Error('Invalid outbound message');
+ if(input.inReplyTo!==undefined&&!uuid(input.inReplyTo)||input.visibility!==undefined&&(!input.orderId||!['shared','reviewer_private'].includes(input.visibility)))throw Error('Invalid outbound message context');
  const {store,binding}=await channel(client,root),unlock=await store.lock();
  try{await store.write('context.json',binding);const name='outbound-'+input.clientMessageId+'.json',old=await store.read(name);
   if(old&&canonical(old.input)!==canonical(input))throw Error('Message ID already bound to another payload');

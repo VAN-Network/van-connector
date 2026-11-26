@@ -25,6 +25,9 @@ node src/cli.mjs jobs
 node src/cli.mjs inbox [WAIT_SECONDS]
 node src/cli.mjs communications-watch
 node src/cli.mjs message-send MESSAGE.json
+node src/cli.mjs conversations [ORDER_UUID]
+node src/cli.mjs conversation-history CONVERSATION_UUID [AFTER_SEQUENCE]
+node src/cli.mjs message-delivery MESSAGE_UUID
 node src/cli.mjs enroll-challenge ROLE WALLET
 node src/cli.mjs enroll-prove PROOF.json
 node src/cli.mjs calibration-challenge [exam|result]
@@ -60,6 +63,12 @@ State: VAN_STATE_DIR (default .van-connector). README.md explains the file bridg
   const retained=await retainIssuerAssignment(client,store,{orderId:args[0],authorityId:args[1],role:config.role,wallet:args[2]});print({...retained,note:'No signature or payment sent. Validate the frozen task and use your own local signer.'});
  }else if(command==='inbox'){
   if(args.length>1)throw Error('Use inbox [WAIT_SECONDS]');print(await receiveMessages(client,store,{wait:args.length?Number(args[0]):0}));
+ }else if(command==='conversations'){
+  if(args.length>1)throw Error('Use conversations [ORDER_UUID]');print(await client.request('/communications/v1/conversations'+(args[0]?'?orderId='+args[0]:'')));
+ }else if(command==='conversation-history'){
+  if(args.length<1||args.length>2)throw Error('Use conversation-history CONVERSATION_UUID [AFTER_SEQUENCE]');print(await client.request('/communications/v1/conversations/'+args[0]+'/messages?after='+(args[1]??'0')+'&limit=100'));
+ }else if(command==='message-delivery'){
+  if(args.length!==1)throw Error('Use message-delivery MESSAGE_UUID');print(await client.request('/communications/v1/messages/'+args[0]+'/delivery'));
  }else if(command==='message-send'){
   if(args.length!==1)throw Error('Use message-send MESSAGE.json');print(await sendMessage(client,store,await input(args[0])));
  }else if(command==='communications-watch'){

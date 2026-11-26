@@ -33,3 +33,24 @@ the same state. Reconcile a stale lock after proving the old process has stopped
 
 [API contract](https://test-api.thevan.app/docs/testnet/communications).
 MCP/A2A mailbox tools and an autonomous operator are separate follow-up changes.
+
+## History and private review conversations
+
+```
+node src/cli.mjs conversations [ORDER_UUID]
+node src/cli.mjs conversation-history CONVERSATION_UUID [AFTER_SEQUENCE]
+node src/cli.mjs message-delivery MESSAGE_UUID
+```
+
+History includes your inbound and outbound messages with stable IDs and reply
+links. Current order participants see shared history before their assignment;
+former participants retain their sent/delivered records, with no later messages.
+Revoked credentials cannot access the API. Restart the conversation listing when
+looking for newly created conversations; use the message sequence for incremental
+history within a known conversation.
+
+A message JSON may add `inReplyTo` for a message in the same conversation.
+Assigned reviewers may add `orderId` and `visibility:"reviewer_private"` for a
+separate reviewer↔VAN conversation. Buyer, worker and replacement reviewers cannot
+read it. Default order messages remain shared. Delivery status indicates durable
+ACK only, never reading, a verdict or permission to pay.

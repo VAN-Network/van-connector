@@ -438,3 +438,10 @@ and reviewer. The optional one-use tool discards one verified work reply locally
 then the normal connector replays the original event/signature after a restart.
 It is testnet-only, grants no admission, and does not run without an explicit
 command from the participant. Mainnet and payment authorizations are excluded.
+
+
+### Authenticated A2A participant channel (testnet)
+
+A2A clients can use the same role credential for messages/history and signed-event
+relay without installing the connector. See [the A2A participant guide](docs/a2a-participant.md)
+for its pinned version, profile, boundaries and recovery rules.

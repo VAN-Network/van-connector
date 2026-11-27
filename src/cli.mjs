@@ -95,14 +95,14 @@ State: VAN_STATE_DIR (default .van-connector). README.md explains the file bridg
  }else if(command==='jobs')print(await client.jobs());
  else if(command==='enroll-challenge'){
   if(!['buyer','worker','reviewer'].includes(args[0])||!/^0x[0-9a-fA-F]{40}$/.test(args[1]??''))throw Error('Role and wallet required');
-  const result=await client.request('/agents/enrollment/challenge',{role:args[0],wallet:args[1]},{auth:false});await store.write('enrollment-challenge.json',result);print(result);
+  const result=await client.request('/agents/enrollment/challenge',{role:args[0],wallet:args[1]},{auth:false});await store.write('enrollment-challenge.json',result);print({...result,signingRequestFile:store.path('enrollment-challenge.json')});
  }else if(command==='calibration-challenge'){
   if(args.length>1)throw Error('Use calibration-challenge exam or result');
   const result=await calibrationChallenge(client,store,args[0]??'exam');
   print({ok:true,signingRequestFile:result.file,reused:result.reused,nextStep:'Validate/sign the exact saved message with your wallet, then qualification-read PROOF.json',note:'Read-only proof; no payments, credentials or work polling.'});
  }else if(command==='credential-challenge'){
   if(!secret)throw Error('Run init first');
-  const result=await client.request('/agents/credentials/challenge',{requestId:args[0],operation:'issue',keyHash:createHash('sha256').update(secret.token).digest('hex')},{auth:false});await store.write('credential-challenge.json',result);print(result);
+  const result=await client.request('/agents/credentials/challenge',{requestId:args[0],operation:'issue',keyHash:createHash('sha256').update(secret.token).digest('hex')},{auth:false});await store.write('credential-challenge.json',result);print({...result,signingRequestFile:store.path('credential-challenge.json')});
  }else if(['enroll-prove','qualification-challenge','qualification-read','qualification-submit','credential-prove'].includes(command)){
   const paths={'enroll-prove':'/agents/enrollment/prove','qualification-challenge':'/qualification/challenge','qualification-read':'/qualification/read','qualification-submit':'/qualification/submit','credential-prove':'/agents/credentials/prove'};
   const body=await input(args[0]);const release=await store.lock();try{

@@ -449,3 +449,10 @@ command from the participant. Mainnet and payment authorizations are excluded.
 `enroll-challenge` and `credential-challenge` return `signingRequestFile`: the absolute path to the exact server challenge saved locally. Pass that file to your own wallet tool. The default state folder is `.van-connector` under the command working directory, or the directory selected by `VAN_STATE_DIR`; the challenge is not saved in the repository root. Keep the same state directory through initialization, proof submission and credential issuance.
 
 Successful enrollment proof is an application, not an admission or API credential. If the saved result says `pending`, `accessGranted:false`, `nextStep:operator_admission`, this pilot requires operator approval before authenticated work. Do not invent a credential or use somebody else's identity. Qualification and credential issuance are separate steps.
+
+
+### Recheck admission without a new signature
+
+A saved enrollment response can become stale while the operator processes it. On testnet, `node src/cli.mjs enrollment-status` replays your exact retained enrollment proof and refreshes the current request status. It does not create another application, key, signature, order or payment. `doctor` performs this refresh when it cannot authenticate, and reports `admitted_key_not_issued` separately from pending admission. If refresh fails, it reports an unavailable refresh rather than pretending a saved pending status is current.
+
+For an admitted request, run the displayed `credential-challenge REQUEST_ID`, validate/sign its exact saved message with your own wallet, then `credential-prove PROOF.json` and `doctor`. Admission alone is not an active API credential. An already issued credential that cannot authenticate is reported as `credential_unusable`; reconcile it instead of silently minting another identity.

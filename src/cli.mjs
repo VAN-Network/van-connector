@@ -2,6 +2,7 @@
 import {receiveMessages,sendMessage,watchMessages} from './communications.mjs';
 import {IssuerClient,GatewayIssuerClient,discoverIssuerAssignment,retainIssuerAssignment,prepareIssuerEvent,submitIssuerEvent} from './issuer.mjs';
 import {canonical} from './canonical.mjs';
+import {refreshEnrollment} from './enrollment-status.mjs';
 import {NETWORK,ENVIRONMENT,validateIdentity} from './network.mjs';
 import {readFile} from 'node:fs/promises';
 import {calibrationChallenge} from './onboarding.mjs';
@@ -30,6 +31,7 @@ node src/cli.mjs conversation-history CONVERSATION_UUID [AFTER_SEQUENCE]
 node src/cli.mjs message-delivery MESSAGE_UUID
 node src/cli.mjs enroll-challenge ROLE WALLET
 node src/cli.mjs enroll-prove PROOF.json
+node src/cli.mjs enrollment-status
 node src/cli.mjs calibration-challenge [exam|result]
 node src/cli.mjs qualification-challenge REQUEST.json
 node src/cli.mjs qualification-read PROOF.json
@@ -91,7 +93,13 @@ State: VAN_STATE_DIR (default .van-connector). README.md explains the file bridg
   await startDaemon(client,store,config,{signal:abort.signal,handlerReady:flags.has('--handler-ready'),acceptJobs:flags.has('--accept-jobs'),...(policyFile?{policy:await input(policyFile)}:{}),log:print});
  }else if(command==='doctor'){
   const health=await client.request('/health',undefined,{auth:false});let ready=null;if(ENVIRONMENT==='mainnet'){const r=await client.exchange('/health/ready',undefined,{auth:false});ready={httpStatus:r.status,...r.body};}let identity=null,access='not_admitted_or_no_credential';try{identity=await client.me();access='authenticated';}catch{}
-  print({origin:TEST_ORIGIN,chainId:NETWORK.chainId,health,ready,initialized:!!config,access,identity,reviewerHandler:'External agent must read assignment/evidence and write decisions; no model bundled',payments:'buyer-pay requires exact quote approval, immutable limits and local signature',environment:ENVIRONMENT,mainnet:ENVIRONMENT==='mainnet'?'bounded pilot; server admission required':'select VAN_NETWORK=mainnet with separate state',onboarding:TEST_ORIGIN+'/reviewer-onboarding',activeState:!!await store.read('active.json')});
+  let enrollment=null,enrollmentRefreshError=null;
+  if(ENVIRONMENT==='testnet'&&!identity){try{enrollment=await refreshEnrollment(client,store);}catch(e){enrollmentRefreshError={code:e.code??'enrollment_refresh_unavailable',httpStatus:e.status??null};}}
+  const issued=await store.read('credential-prove-result.json');
+  if(!identity&&enrollment?.status==='admitted')access=issued?'credential_unusable':'admitted_key_not_issued';
+  print({origin:TEST_ORIGIN,chainId:NETWORK.chainId,health,ready,initialized:!!config,access,identity,enrollment,enrollmentRefreshError,reviewerHandler:'External agent must read assignment/evidence and write decisions; no model bundled',payments:'buyer-pay requires exact quote approval, immutable limits and local signature',environment:ENVIRONMENT,mainnet:ENVIRONMENT==='mainnet'?'bounded pilot; server admission required':'select VAN_NETWORK=mainnet with separate state',onboarding:TEST_ORIGIN+'/reviewer-onboarding',activeState:!!await store.read('active.json')});
+ }else if(command==='enrollment-status'){
+  const enrollment=await refreshEnrollment(client,store);if(!enrollment)throw Error('No retained enrollment proof; complete enroll-prove first');print(enrollment);
  }else if(command==='jobs')print(await client.jobs());
  else if(command==='enroll-challenge'){
   if(!['buyer','worker','reviewer'].includes(args[0])||!/^0x[0-9a-fA-F]{40}$/.test(args[1]??''))throw Error('Role and wallet required');

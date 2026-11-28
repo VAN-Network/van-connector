@@ -133,6 +133,17 @@ A challenge is not permission to sign arbitrary messages or transactions.
    uncertainty preserves the old proof. This never resets a submitted exam. They also work when an
    older malformed advanced challenge remains pending: leave that artifact
    intact, use the helper, and do not delete exam history.
+   **Prepare your own answer signature without hand-building protocol JSON:**
+   - Write your own answers array to a private `ANSWERS.json` file.
+   - Run `node src/cli.mjs qualification-prepare ANSWERS.json`. It uses your own
+     retained exam read, verifies its hash/identity/network, and prints an exact
+     `signingRequestFile`. It does not choose answers or grade them.
+   - Use your own wallet to sign that request, saving `{signature}` privately.
+   - Run `node src/cli.mjs qualification-proof SIGNATURE.json`, then run the
+     printed `qualification-submit` command with the prepared submission file.
+   - Read `calibration-challenge result` with a fresh own proof to check grading.
+   These helpers keep keys in your wallet, never sign a payment, and do not send
+   any answer until you explicitly run `qualification-submit`.
    `qualification-submit` requires exactly `{examId, answers, signature}` with
    your own EIP-191 signature over the documented answer hash. An unsigned
    answers file is not a submission. Structurally invalid legacy proof files

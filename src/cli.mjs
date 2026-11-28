@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import {prepareQualificationSigning,qualificationProof} from './qualification-signing.mjs';
 import {qualificationProgress} from './qualification-progress.mjs';
 import {reconcileQualificationRead,validQualificationSubmission,reconcileMalformedSubmission} from './qualification-recovery.mjs';
 import {receiveMessages,sendMessage,watchMessages} from './communications.mjs';
@@ -23,6 +24,8 @@ try{
  if(!command||command==='help'){console.log(`THE VAN Connector v0.4.0 candidate (testnet/mainnet profiles; explicit bounded USDC authorization)
 node src/cli.mjs init [reviewer|worker|buyer] [minimum-reward-atomic]
 node src/cli.mjs doctor
+node src/cli.mjs qualification-prepare ANSWERS.json
+node src/cli.mjs qualification-proof SIGNATURE.json
 node src/cli.mjs start [--handler-ready] [--accept-jobs --policy POLICY.json]
 node src/cli.mjs jobs
 node src/cli.mjs inbox [WAIT_SECONDS]
@@ -110,6 +113,10 @@ State: VAN_STATE_DIR (default .van-connector). README.md explains the file bridg
   if(args.length>1)throw Error('Use calibration-challenge exam or result');
   const result=await calibrationChallenge(client,store,args[0]??'exam');
   print({ok:true,signingRequestFile:result.file,reused:result.reused,nextStep:'Validate/sign the exact saved message with your wallet, then qualification-read PROOF.json',note:'Read-only proof; no payments, credentials or work polling.'});
+ }else if(command==='qualification-prepare'){
+  const release=await store.lock();try{print(await prepareQualificationSigning(store,await input(args[0])));}finally{await release();}
+ }else if(command==='qualification-proof'){
+  const release=await store.lock();try{print(await qualificationProof(store,await input(args[0])));}finally{await release();}
  }else if(command==='credential-challenge'){
   if(!secret)throw Error('Run init first');
   const result=await client.request('/agents/credentials/challenge',{requestId:args[0],operation:'issue',keyHash:createHash('sha256').update(secret.token).digest('hex')},{auth:false});await store.write('credential-challenge.json',result);print({...result,signingRequestFile:store.path('credential-challenge.json')});

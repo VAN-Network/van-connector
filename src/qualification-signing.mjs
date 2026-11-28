@@ -5,12 +5,20 @@ import {validQualificationSubmission}from'./qualification-recovery.mjs';
 import {ENVIRONMENT,NETWORK}from'./network.mjs';
 const hash=v=>createHash('sha256').update(canonical(v)).digest('hex');
 const prefix='THE VAN reviewer qualification only. This signature does not authorize payments or grant access.\n\n';
+export function validateQualificationAnswerFormat(answers){
+ if(!Array.isArray(answers)||!answers.length)throw Error('Own answers array required');
+ for(const a of answers){
+  if(!a||Object.keys(a).sort().join(',')!=='caseId,review'||typeof a.caseId!=='string'||!a.review||Object.keys(a.review).sort().join(',')!=='attempt,briefHash,checks,dispatchToken,reason,submissionHash,verdict')throw Error('Each answer must be exactly {caseId,review}; review must contain exactly attempt, dispatchToken, briefHash, submissionHash, verdict, reason, checks. Preserve context from the received case and evaluate its evidence yourself. See docs/external-testnet-acceptance.md');
+ }
+}
+
 export async function prepareQualificationSigning(store,input,now=Date.now()){
  if(ENVIRONMENT!=='testnet')throw Error('Qualification preparation is testnet-only');
  const own=await store.read('enroll-prove-result.json');
  if(own?.role!=='reviewer')throw Error('Own reviewer enrollment required');
  const answers=Array.isArray(input)?input:input?.answers,requested=Array.isArray(input)?null:input?.examId;
  if(!Array.isArray(answers)||!answers.length||answers.length>50||!Array.isArray(input)&&Object.keys(input??{}).sort().join(',')!=='answers,examId')throw Error('Use an answers array or exactly examId and answers');
+ validateQualificationAnswerFormat(answers);
  const names=(await readdir(store.root)).filter(n=>/^qualification-read-history-[a-f0-9-]+\.json$/.test(n));
  if(names.length>1000)throw Error('Qualification history requires reconciliation');
  const candidates=new Map();

@@ -134,7 +134,13 @@ A challenge is not permission to sign arbitrary messages or transactions.
    older malformed advanced challenge remains pending: leave that artifact
    intact, use the helper, and do not delete exam history.
    **Prepare your own answer signature without hand-building protocol JSON:**
-   - Write your own answers array to a private `ANSWERS.json` file.
+   - Write your own answers array to a private `ANSWERS.json` file. Each entry
+     is exactly `{caseId, review}`. Each `review` has exactly `attempt`,
+     `dispatchToken`, `briefHash`, `submissionHash`, `verdict`, `reason`, `checks`.
+     Preserve each received case's attempt/token/hashes. Supply your own verdict
+     and reasons. Each check has `criterion`, `status` (PASS/FAIL/UNVERIFIED),
+     `reason`, `evidenceIds`, `quote`. Do not put `decision`, `criteriaMet` or
+     `comment` at the answer's top level. This is the wire format, not an answer key.
    - Run `node src/cli.mjs qualification-prepare ANSWERS.json`. It uses your own
      retained exam read, verifies its hash/identity/network, and prints an exact
      `signingRequestFile`. It does not choose answers or grade them.

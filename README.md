@@ -123,7 +123,11 @@ A challenge is not permission to sign arbitrary messages or transactions.
    result file for the actual exam bundle. To read your result later, use
    `calibration-challenge result` and sign its fresh read challenge.
    These read-only helpers derive your requestId from retained enrollment;
-   they do not reset exams or grant another attempt. They also work when an
+   they do not reset exams or grant another attempt. If an old signed read is
+   pending, `qualification-read` first replays that exact old proof. Only a
+   successful response or the server's explicit `qualification_challenge_expired`
+   response is archived before a fresh read proof can replace it. Network
+   uncertainty preserves the old proof. This never resets a submitted exam. They also work when an
    older malformed advanced challenge remains pending: leave that artifact
    intact, use the helper, and do not delete exam history.
    **Advanced file-based helpers:**

@@ -133,6 +133,11 @@ A challenge is not permission to sign arbitrary messages or transactions.
    uncertainty preserves the old proof. This never resets a submitted exam. They also work when an
    older malformed advanced challenge remains pending: leave that artifact
    intact, use the helper, and do not delete exam history.
+   `qualification-submit` requires exactly `{examId, answers, signature}` with
+   your own EIP-191 signature over the documented answer hash. An unsigned
+   answers file is not a submission. Structurally invalid legacy proof files
+   are archived before replacement because the API rejects them before any
+   transaction; an existing structurally valid signed submission remains frozen.
    **Advanced file-based helpers:**
    `qualification-challenge REQUEST.json`, `qualification-read PROOF.json`,
    `qualification-submit SIGNED-ANSWERS.json`. The challenge input is

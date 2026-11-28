@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import {qualificationProgress} from './qualification-progress.mjs';
-import {reconcileQualificationRead} from './qualification-recovery.mjs';
+import {reconcileQualificationRead,validQualificationSubmission,reconcileMalformedSubmission} from './qualification-recovery.mjs';
 import {receiveMessages,sendMessage,watchMessages} from './communications.mjs';
 import {IssuerClient,GatewayIssuerClient,discoverIssuerAssignment,retainIssuerAssignment,prepareIssuerEvent,submitIssuerEvent} from './issuer.mjs';
 import {canonical} from './canonical.mjs';
@@ -115,9 +115,9 @@ State: VAN_STATE_DIR (default .van-connector). README.md explains the file bridg
   const result=await client.request('/agents/credentials/challenge',{requestId:args[0],operation:'issue',keyHash:createHash('sha256').update(secret.token).digest('hex')},{auth:false});await store.write('credential-challenge.json',result);print({...result,signingRequestFile:store.path('credential-challenge.json')});
  }else if(['enroll-prove','qualification-challenge','qualification-read','qualification-submit','credential-prove'].includes(command)){
   const paths={'enroll-prove':'/agents/enrollment/prove','qualification-challenge':'/qualification/challenge','qualification-read':'/qualification/read','qualification-submit':'/qualification/submit','credential-prove':'/agents/credentials/prove'};
-  const body=await input(args[0]);if(command==='qualification-challenge'&&(!body||Object.keys(body).sort().join(',')!=='operation,requestId'||! /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(body.requestId??'')||!['exam','result'].includes(body.operation)))throw Error('Use calibration-challenge exam or result; advanced qualification-challenge requires a file with only requestId and operation');const release=await store.lock();try{
+  const body=await input(args[0]);if(command==='qualification-submit'&&!validQualificationSubmission(body))throw Error('qualification-submit requires a file with exactly examId, answers and your own 65-byte signature; sign your answers before submitting');if(command==='qualification-challenge'&&(!body||Object.keys(body).sort().join(',')!=='operation,requestId'||! /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(body.requestId??'')||!['exam','result'].includes(body.operation)))throw Error('Use calibration-challenge exam or result; advanced qualification-challenge requires a file with only requestId and operation');const release=await store.lock();try{
    // Freeze before sending. Re-executing uses the same artifact after a lost reply.
-   const old=await store.read(command+'-pending.json');if(old&&JSON.stringify(old)!==JSON.stringify(body)){if(command==='qualification-read')await reconcileQualificationRead(client,store,old);else throw Error('Pending artifact differs; reconcile the old request first');}
+   const old=await store.read(command+'-pending.json');if(old&&JSON.stringify(old)!==JSON.stringify(body)){if(command==='qualification-read')await reconcileQualificationRead(client,store,old);else if(command==='qualification-submit')await reconcileMalformedSubmission(store,old);else throw Error('Pending artifact differs; reconcile the old request first');}
    await store.write(command+'-pending.json',body);const result=await client.request(paths[command],body,{auth:false});await store.write(command+'-result.json',result);await store.write(command+'-history-'+randomUUID()+'.json',{request:body,result});if(command==='enroll-prove')await store.write('enrollment-proof-retained.json',body);await store.remove(command+'-pending.json');
    // Exam/results and signatures stay in private files, never stdout.
    print({ok:true,resultFile:store.path(command+'-result.json'),...(command==='qualification-read'?{progress:qualificationProgress(result)}:{}),note:'Read locally; do not publish proofs, exam answers or credentials.'});

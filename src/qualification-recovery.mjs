@@ -18,3 +18,19 @@ export async function reconcileMalformedSubmission(store,old){
  await store.write('qualification-submit-malformed-'+randomUUID()+'.json',{request:old,resolution:'invalid_proof_shape_before_transaction'});
  await store.remove('qualification-submit-pending.json');
 }
+
+export async function reconcileRejectedQualification(client,store){
+ const old=await store.read('qualification-submit-pending.json');
+ if(!old)return {status:'nothing_pending'};
+ if(!validQualificationSubmission(old)){await reconcileMalformedSubmission(store,old);return {status:'invalid_proof_archived',nextStep:'prepare_own_signed_answers'};}
+ let rejected;
+ try{const result=await client.request('/qualification/submit',old,{auth:false});await store.write('qualification-submit-result.json',result);}
+ catch(e){
+  if(e.status!==400||e.code!=='invalid_qualification_answers')throw e;
+  rejected={status:400,code:e.code};
+ }
+ if(!rejected)throw Error('The original attempt was acknowledged; read its result and do not replace signed answers');
+ await store.write('qualification-submit-rejected-'+randomUUID()+'.json',{request:old,resolution:rejected});
+ await store.remove('qualification-submit-pending.json');
+ return {status:'invalid_answer_format_archived',nextStep:'correct_own_answer_schema_then_prepare_sign_submit'};
+}

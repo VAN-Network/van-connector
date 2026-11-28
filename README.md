@@ -149,6 +149,12 @@ A challenge is not permission to sign arbitrary messages or transactions.
    answers file is not a submission. Structurally invalid legacy proof files
    are archived before replacement because the API rejects them before any
    transaction; an existing structurally valid signed submission remains frozen.
+   If a signed submission returns exactly `invalid_qualification_answers`, run
+   `node src/cli.mjs qualification-reconcile`. It replays the exact retained
+   submission and archives it only if the API again explicitly rejects its
+   answer format before recording a result. Then correct your own answer schema,
+   prepare a new own signature and submit. An acknowledged graded attempt,
+   signature error or uncertain transport never grants a replacement or retake.
    **Advanced file-based helpers:**
    `qualification-challenge REQUEST.json`, `qualification-read PROOF.json`,
    `qualification-submit SIGNED-ANSWERS.json`. The challenge input is

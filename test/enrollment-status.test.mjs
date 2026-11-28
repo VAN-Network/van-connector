@@ -35,3 +35,15 @@ test('mainnet refuses enrollment status replay before reading files or networkin
 test('an unacknowledged first proof is reconciled through enroll-prove, not a status request',async()=>{
  let calls=0;await assert.rejects(refreshEnrollment({request:async()=>{calls++;throw Error('must not request')}},{read:async name=>name==='enroll-prove-pending.json'?proof:null}),/Confirmed enrollment result/);assert.equal(calls,0);
 });
+
+test('older acknowledged history recovers the exact own proof',()=>fixture(async store=>{
+ await store.write('enroll-prove-history-aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa.json',{request:proof,result:identity});
+ await store.remove('enroll-prove-pending.json');
+ const result=await refreshEnrollment({request:async(path,body)=>{assert.deepEqual(body,proof);return {...identity,status:'admitted'};}},store);
+ assert.equal(result.status,'admitted');assert.deepEqual(await store.read('enrollment-proof-retained.json'),proof);
+}));
+test('foreign history cannot authorize a status replay',()=>fixture(async store=>{
+ await store.write('enroll-prove-history-aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa.json',{request:proof,result:{...identity,role:'worker'}});
+ await store.remove('enroll-prove-pending.json');
+ let calls=0;const result=await refreshEnrollment({request:async()=>{calls++;}},store);assert.equal(result,null);assert.equal(calls,0);
+}));

@@ -110,7 +110,11 @@ A challenge is not permission to sign arbitrary messages or transactions.
    `{ "challengeId": "...", "signature": "..." }`; do not post it in GitHub.
 3. Run `node src/cli.mjs enroll-prove /private/path/proof.json`.
    Read private `enroll-prove-result.json` for your requestId. Share only that ID
-   with the operator. There is no automatic approval.
+   with the operator. Admission policy remains operator-controlled.
+   Check `enrollment-status` for the current status: `status: admitted` means
+   proceed to credential exchange, even though `accessGranted` remains false
+   until you issue your own credential. If you skipped `init`, initialize your
+   own role before `credential-challenge`; preserve existing enrollment files.
 4. **Reviewers only:** follow the canonical guide for the frozen six-case calibration.
    Buyer/worker admission is operator-controlled but does not use the reviewer exam. Helpers:
    `qualification-challenge REQUEST.json`, `qualification-read PROOF.json`,

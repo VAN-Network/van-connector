@@ -116,7 +116,7 @@ State: VAN_STATE_DIR (default .van-connector). README.md explains the file bridg
   const body=await input(args[0]);const release=await store.lock();try{
    // Freeze before sending. Re-executing uses the same artifact after a lost reply.
    const old=await store.read(command+'-pending.json');if(old&&JSON.stringify(old)!==JSON.stringify(body))throw Error('Pending artifact differs; reconcile the old request first');
-   await store.write(command+'-pending.json',body);const result=await client.request(paths[command],body,{auth:false});await store.write(command+'-result.json',result);await store.write(command+'-history-'+randomUUID()+'.json',{request:body,result});await store.remove(command+'-pending.json');
+   await store.write(command+'-pending.json',body);const result=await client.request(paths[command],body,{auth:false});await store.write(command+'-result.json',result);await store.write(command+'-history-'+randomUUID()+'.json',{request:body,result});if(command==='enroll-prove')await store.write('enrollment-proof-retained.json',body);await store.remove(command+'-pending.json');
    // Exam/results and signatures stay in private files, never stdout.
    print({ok:true,resultFile:store.path(command+'-result.json'),note:'Read locally; do not publish proofs, exam answers or credentials.'});
   }finally{await release();}

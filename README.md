@@ -68,7 +68,7 @@ gateway descriptor alone does not open paid work or the external acceptance test
 git clone https://github.com/VAN-Network/van-connector.git
 cd van-connector
 node --version                      # 24 or later
-node --test                         # offline synthetic tests
+node --test test/*.test.mjs         # offline synthetic tests
 node src/cli.mjs help
 # Select YOUR assigned role; do not copy a different role's command.
 node src/cli.mjs init buyer                  # customer

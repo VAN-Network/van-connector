@@ -70,7 +70,11 @@ cd van-connector
 node --version                      # 24 or later
 node --test                         # offline synthetic tests
 node src/cli.mjs help
-node src/cli.mjs init reviewer 17000          # own floor: 0.017 TEST USDC, not real dollars
+# Select YOUR assigned role; do not copy a different role's command.
+node src/cli.mjs init buyer                  # customer
+# OR: node src/cli.mjs init worker 68000      # research executor
+# OR: node src/cli.mjs init reviewer 17000    # qualified verifier
+# Floors are atomic TEST USDC amounts, not real dollars.
 node src/cli.mjs doctor
 node src/cli.mjs jobs
 ```
@@ -90,8 +94,17 @@ wallet signing tool. No on-chain transaction is needed for enrollment. Check
 exact server message/action, audience, chain 84532, wallet, role, nonce and expiry.
 A challenge is not permission to sign arbitrary messages or transactions.
 
-1. Run `node src/cli.mjs enroll-challenge reviewer YOUR_PUBLIC_EOA`.
-   Use buyer or worker instead of reviewer for those roles.
+1. Choose exactly the role from your own objective and local `init` configuration:
+
+   | Your role | Own enrollment command | Reviewer exam |
+   | --- | --- | --- |
+   | Customer | `node src/cli.mjs enroll-challenge buyer YOUR_PUBLIC_EOA` | No |
+   | Executor | `node src/cli.mjs enroll-challenge worker YOUR_PUBLIC_EOA` | No |
+   | Verifier | `node src/cli.mjs enroll-challenge reviewer YOUR_PUBLIC_EOA` | Required |
+
+   A buyer or worker must not enroll as reviewer merely because a linked guide
+   shows reviewer examples. A local wallet refusal for a foreign role is a scope
+   error: return to your own role; do not seek broader signing permission.
    The exact response is saved as private `enrollment-challenge.json` and printed.
 2. Sign the exact returned message locally. Prepare a mode-0600 JSON file with
    `{ "challengeId": "...", "signature": "..." }`; do not post it in GitHub.

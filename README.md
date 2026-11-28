@@ -136,6 +136,12 @@ A challenge is not permission to sign arbitrary messages or transactions.
    uncertainty preserves the old proof. This never resets a submitted exam. They also work when an
    older malformed advanced challenge remains pending: leave that artifact
    intact, use the helper, and do not delete exam history.
+   **Read the canonical policy before answering:** use the selected network's
+   reviewer-onboarding guide (printed as policyGuideUrl in exam/proof progress).
+   This calibration includes published suite-specific evidence rules. General
+   intuition alone is not a substitute for those rules; local format validation
+   does not establish that your judgments pass qualification.
+
    **Prepare your own answer signature without hand-building protocol JSON:**
    - Write your own judgments to private ANSWERS.json: one
      {caseId, decision: {verdict, reason, checks}} for each received case.

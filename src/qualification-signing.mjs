@@ -1,3 +1,4 @@
+import{qualificationGuidance}from'./qualification-progress.mjs';
 import {normalizeDecision,assembleQualificationAnswers} from './review-decision.mjs';
 import {readdir}from'node:fs/promises';
 import {createHash}from'node:crypto';
@@ -43,7 +44,7 @@ export async function prepareQualificationSigning(store,input,now=Date.now()){
  const prepared={examId:bundle.examId,answers};
  const request={signingMethod:'personal_sign',message:prefix+canonical({action:'van.reviewer-qualification.v1',chainId:84532,audience:NETWORK.audience,examId:bundle.examId,bundleHash,answersHash:hash(answers)})};
  await store.write('qualification-prepared-answers.json',prepared);await store.write('qualification-answer-signing-request.json',request);
- return {signingRequestFile:store.path('qualification-answer-signing-request.json'),examId:bundle.examId,nextStep:'Sign this exact request with your own wallet, then qualification-proof SIGNATURE.json',paymentAuthorized:false};
+ return {...qualificationGuidance(),signingRequestFile:store.path('qualification-answer-signing-request.json'),examId:bundle.examId,nextStep:'Sign this exact request with your own wallet, then qualification-proof SIGNATURE.json',paymentAuthorized:false};
 }
 export async function qualificationProof(store,proof){
  if(ENVIRONMENT!=='testnet')throw Error('Qualification preparation is testnet-only');

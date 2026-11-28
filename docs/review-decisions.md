@@ -30,6 +30,11 @@ create a completed receipt or send a review.
 
 ## Qualification
 
+First read the selected network's canonical /reviewer-onboarding policy. This
+suite tests compliance with its published evidence rules, not a hidden answer key
+or general review competence. The CLI prints policyGuideUrl with exam progress
+and signature preparation. Follow that policy before writing your own judgments.
+
 Write one entry per received case: {caseId, decision: {verdict, reason, checks}}.
 Use IDs, criteria and excerpts from that case; do not copy another case's
 evidence. Do not write dispatch tokens, attempt numbers or hashes.

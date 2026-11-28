@@ -121,9 +121,12 @@ A challenge is not permission to sign arbitrary messages or transactions.
    Sign the exact file shown in `signingRequestFile`, then call
    `qualification-read PROOF.json` with your own read proof. Read the private
    result file for the actual exam bundle. A successful read is **not a passed
-   exam**. The CLI prints safe `progress` metadata: `exam_received` or
+   exam**. A successful HTTP submission is not a pass either. The CLI prints
+   safe `progress` metadata for both read and submission: `exam_received` or
    `awaiting_submission` means you must still prepare, sign and submit your own
-   answers. Only a recorded graded result can confirm a pass. To read your result later, use
+   answers. `qualification_not_passed_no_admission` means the exam failed;
+   waiting for an operator or requesting a credential cannot turn it into a pass.
+   Only a recorded graded result can confirm a pass. To read your result later, use
    `calibration-challenge result` and sign its fresh read challenge.
    These read-only helpers derive your requestId from retained enrollment;
    they do not reset exams or grant another attempt. If an old signed read is

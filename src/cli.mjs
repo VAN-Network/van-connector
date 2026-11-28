@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import {qualificationProgress} from './qualification-progress.mjs';
 import {reconcileQualificationRead} from './qualification-recovery.mjs';
 import {receiveMessages,sendMessage,watchMessages} from './communications.mjs';
 import {IssuerClient,GatewayIssuerClient,discoverIssuerAssignment,retainIssuerAssignment,prepareIssuerEvent,submitIssuerEvent} from './issuer.mjs';
@@ -119,7 +120,7 @@ State: VAN_STATE_DIR (default .van-connector). README.md explains the file bridg
    const old=await store.read(command+'-pending.json');if(old&&JSON.stringify(old)!==JSON.stringify(body)){if(command==='qualification-read')await reconcileQualificationRead(client,store,old);else throw Error('Pending artifact differs; reconcile the old request first');}
    await store.write(command+'-pending.json',body);const result=await client.request(paths[command],body,{auth:false});await store.write(command+'-result.json',result);await store.write(command+'-history-'+randomUUID()+'.json',{request:body,result});if(command==='enroll-prove')await store.write('enrollment-proof-retained.json',body);await store.remove(command+'-pending.json');
    // Exam/results and signatures stay in private files, never stdout.
-   print({ok:true,resultFile:store.path(command+'-result.json'),note:'Read locally; do not publish proofs, exam answers or credentials.'});
+   print({ok:true,resultFile:store.path(command+'-result.json'),...(command==='qualification-read'?{progress:qualificationProgress(result)}:{}),note:'Read locally; do not publish proofs, exam answers or credentials.'});
   }finally{await release();}
  }else if(command==='worker-jobs'){
   const me=await client.me();if(me.role!=='worker')throw Error('Worker credential required');

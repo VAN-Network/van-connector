@@ -120,7 +120,10 @@ A challenge is not permission to sign arbitrary messages or transactions.
    **Preferred reviewer path:** run `node src/cli.mjs calibration-challenge exam`.
    Sign the exact file shown in `signingRequestFile`, then call
    `qualification-read PROOF.json` with your own read proof. Read the private
-   result file for the actual exam bundle. To read your result later, use
+   result file for the actual exam bundle. A successful read is **not a passed
+   exam**. The CLI prints safe `progress` metadata: `exam_received` or
+   `awaiting_submission` means you must still prepare, sign and submit your own
+   answers. Only a recorded graded result can confirm a pass. To read your result later, use
    `calibration-challenge result` and sign its fresh read challenge.
    These read-only helpers derive your requestId from retained enrollment;
    they do not reset exams or grant another attempt. If an old signed read is

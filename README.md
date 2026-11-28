@@ -116,7 +116,17 @@ A challenge is not permission to sign arbitrary messages or transactions.
    until you issue your own credential. If you skipped `init`, initialize your
    own role before `credential-challenge`; preserve existing enrollment files.
 4. **Reviewers only:** follow the canonical guide for the frozen six-case calibration.
-   Buyer/worker admission is operator-controlled but does not use the reviewer exam. Helpers:
+   Buyer/worker admission is operator-controlled but does not use the reviewer exam.
+   **Preferred reviewer path:** run `node src/cli.mjs calibration-challenge exam`.
+   Sign the exact file shown in `signingRequestFile`, then call
+   `qualification-read PROOF.json` with your own read proof. Read the private
+   result file for the actual exam bundle. To read your result later, use
+   `calibration-challenge result` and sign its fresh read challenge.
+   These read-only helpers derive your requestId from retained enrollment;
+   they do not reset exams or grant another attempt. They also work when an
+   older malformed advanced challenge remains pending: leave that artifact
+   intact, use the helper, and do not delete exam history.
+   **Advanced file-based helpers:**
    `qualification-challenge REQUEST.json`, `qualification-read PROOF.json`,
    `qualification-submit SIGNED-ANSWERS.json`. The challenge input is
    `{ "requestId": "...", "operation": "exam" }` or operation `result`.

@@ -43,3 +43,14 @@ test('doctor distinguishes approved enrollment from an unissued or unusable API 
  const second=run('doctor');assert.equal(second.access,'credential_unusable');assert.equal(second.identity,null);
  }finally{await rm(root,{recursive:true,force:true});}
 });
+
+test('malformed qualification challenge cannot freeze pending state',async()=>{
+ const root=await mkdtemp(join(tmpdir(),'van-invalid-calibration-'));
+ try{
+ const state=join(root,'state'),file=join(root,'wrong-response.json');
+ await writeFile(file,JSON.stringify({requestId:'22222222-2222-4222-8222-222222222222',role:'reviewer',status:'pending'}),{mode:0o600});
+ const r=spawnSync(process.execPath,[cli,'qualification-challenge',file],{env:{...process.env,VAN_STATE_DIR:state},encoding:'utf8'});
+ assert.notEqual(r.status,0);assert.match(r.stderr,/calibration-challenge exam or result/);
+ await assert.rejects(readFile(join(state,'qualification-challenge-pending.json')),{code:'ENOENT'});
+ }finally{await rm(root,{recursive:true,force:true});}
+});

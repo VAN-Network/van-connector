@@ -1,3 +1,4 @@
+import {normalizeDecision,reviewContext} from './review-decision.mjs';
 import {ENVIRONMENT,STATE_CONTEXT,requireStateContext} from './network.mjs';
 import {createHash} from 'node:crypto';
 import {setTimeout as sleep} from 'node:timers/promises';
@@ -11,11 +12,9 @@ export function validateAssignment(a,d){if(a?.jobId!==d.jobId||a.timingVersion!=
 export function deadlines(t){const out={};for(const key of ['leaseUntil','processingDeadline','hardDeadline']){out[key]=Date.parse(t?.[key]);if(!Number.isFinite(out[key]))throw Error('Invalid deadline contract');}if(out.leaseUntil>out.processingDeadline||out.processingDeadline>out.hardDeadline)throw Error('Invalid deadline ordering');return out;}
 export function receiptFor(decision,a,d,retained){
  validateDispatch(d);validateAssignment(a,d);
- if(!decision||Object.keys(decision).sort().join(',')!=='checks,reason,verdict'||!['ACCEPT','REVISE','REJECT','INCONCLUSIVE'].includes(decision.verdict)||typeof decision.reason!=='string'||!decision.reason.trim()||decision.reason.length>2000||!Array.isArray(decision.checks)||decision.checks.length!==a.requiredCriteria.length)throw Error('Invalid decision shape');
- const seen=new Set();for(const c of decision.checks){if(!c||Object.keys(c).sort().join(',')!=='criterion,evidenceIds,quote,reason,status'||!a.requiredCriteria.includes(c.criterion)||seen.has(c.criterion)||!['PASS','FAIL','UNVERIFIED'].includes(c.status)||typeof c.reason!=='string'||!c.reason.trim()||c.reason.length>1000||!Array.isArray(c.evidenceIds)||c.evidenceIds.some(x=>!uuid(x)))throw Error('Invalid criterion decision');seen.add(c.criterion);if(c.status==='UNVERIFIED'?(c.evidenceIds.length||c.quote!==null):(!c.evidenceIds.length||typeof c.quote!=='string'||!c.quote.trim()))throw Error('Unsupported check evidence');}
- const unknown=decision.checks.some(c=>c.status==='UNVERIFIED'),fail=decision.checks.some(c=>c.status==='FAIL');if(decision.verdict==='ACCEPT'&&(unknown||fail)||['REJECT','REVISE'].includes(decision.verdict)&&(!fail||unknown)||decision.verdict==='INCONCLUSIVE'&&!unknown)throw Error('Inconsistent verdict');
+ decision=normalizeDecision(decision,a.requiredCriteria);
  validateRetainedProof(decision,a,d,retained);
- return {...decision,attempt:d.attempt,dispatchToken:d.dispatchToken,briefHash:a.briefHash,submissionHash:a.submissionHash};
+ return {...decision,...reviewContext({attempt:d.attempt,dispatchToken:d.dispatchToken,briefHash:a.briefHash,submissionHash:a.submissionHash})};
 }
 export async function availability(client,identity){await client.request('/agents/instances/heartbeat',{instanceId:identity.instanceId,slots:1,minRewardAtomic:identity.minRewardAtomic});await client.request('/reviews/heartbeat',{});}
 // No model or shell command is invoked. The independently operated agent reads

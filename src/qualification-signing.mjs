@@ -1,3 +1,4 @@
+import {normalizeDecision,assembleQualificationAnswers} from './review-decision.mjs';
 import {readdir}from'node:fs/promises';
 import {createHash}from'node:crypto';
 import {canonical}from'./canonical.mjs';
@@ -8,7 +9,13 @@ const prefix='THE VAN reviewer qualification only. This signature does not autho
 export function validateQualificationAnswerFormat(answers){
  if(!Array.isArray(answers)||!answers.length)throw Error('Own answers array required');
  for(const a of answers){
-  if(!a||Object.keys(a).sort().join(',')!=='caseId,review'||typeof a.caseId!=='string'||!a.review||Object.keys(a.review).sort().join(',')!=='attempt,briefHash,checks,dispatchToken,reason,submissionHash,verdict')throw Error('Each answer must be exactly {caseId,review}; review must contain exactly attempt, dispatchToken, briefHash, submissionHash, verdict, reason, checks. Preserve context from the received case and evaluate its evidence yourself. See docs/external-testnet-acceptance.md');
+  const keys=Object.keys(a??{}).sort().join(',');
+  if(!a||typeof a.caseId!=='string'||!['caseId,decision','caseId,review'].includes(keys))throw Error('Each answer must be exactly {caseId,decision}; legacy {caseId,review} remains supported');
+  if(keys==='caseId,decision')normalizeDecision(a.decision);
+  else{
+   if(!a.review||Object.keys(a.review).sort().join(',')!=='attempt,briefHash,checks,dispatchToken,reason,submissionHash,verdict')throw Error('Legacy answer must be exactly {caseId,review} with all seven review fields');
+   normalizeDecision({verdict:a.review.verdict,reason:a.review.reason,checks:a.review.checks});
+  }
  }
 }
 
@@ -16,9 +23,9 @@ export async function prepareQualificationSigning(store,input,now=Date.now()){
  if(ENVIRONMENT!=='testnet')throw Error('Qualification preparation is testnet-only');
  const own=await store.read('enroll-prove-result.json');
  if(own?.role!=='reviewer')throw Error('Own reviewer enrollment required');
- const answers=Array.isArray(input)?input:input?.answers,requested=Array.isArray(input)?null:input?.examId;
- if(!Array.isArray(answers)||!answers.length||answers.length>50||!Array.isArray(input)&&Object.keys(input??{}).sort().join(',')!=='answers,examId')throw Error('Use an answers array or exactly examId and answers');
- validateQualificationAnswerFormat(answers);
+ const judgments=Array.isArray(input)?input:input?.answers,requested=Array.isArray(input)?null:input?.examId;
+ if(!Array.isArray(judgments)||!judgments.length||judgments.length>50||!Array.isArray(input)&&Object.keys(input??{}).sort().join(',')!=='answers,examId')throw Error('Use an answers array or exactly examId and answers');
+ validateQualificationAnswerFormat(judgments);
  const names=(await readdir(store.root)).filter(n=>/^qualification-read-history-[a-f0-9-]+\.json$/.test(n));
  if(names.length>1000)throw Error('Qualification history requires reconciliation');
  const candidates=new Map();
@@ -30,6 +37,7 @@ export async function prepareQualificationSigning(store,input,now=Date.now()){
  }
  if(candidates.size!==1)throw Error('A unique own unexpired exam read is required; read your exam or specify its examId');
  const {bundle,bundleHash}=[...candidates.values()][0];
+ const answers=assembleQualificationAnswers(bundle,judgments);
  const pending=await store.read('qualification-submit-pending.json');
  if(validQualificationSubmission(pending)&&pending.examId===bundle.examId&&hash(pending.answers)!==hash(answers))throw Error('Reconcile the exact pending signed submission before changing answers');
  const prepared={examId:bundle.examId,answers};

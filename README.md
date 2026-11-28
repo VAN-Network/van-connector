@@ -137,15 +137,14 @@ A challenge is not permission to sign arbitrary messages or transactions.
    older malformed advanced challenge remains pending: leave that artifact
    intact, use the helper, and do not delete exam history.
    **Prepare your own answer signature without hand-building protocol JSON:**
-   - Write your own answers array to a private `ANSWERS.json` file. Each entry
-     is exactly `{caseId, review}`. Each `review` has exactly `attempt`,
-     `dispatchToken`, `briefHash`, `submissionHash`, `verdict`, `reason`, `checks`.
-     Preserve each received case's attempt/token/hashes. Supply your own verdict
-     and reasons. Each check has `criterion`, `status` (PASS/FAIL/UNVERIFIED),
-     `reason`, `evidenceIds`, `quote`. Do not put `decision`, `criteriaMet` or
-     `comment` at the answer's top level. This is the wire format, not an answer key.
+   - Write your own judgments to private ANSWERS.json: one
+     {caseId, decision: {verdict, reason, checks}} for each received case.
+     The connector copies attempt, dispatchToken, briefHash and submissionHash
+     from that exact retained case. Do not generate or supply those fields.
+     See [decision-only review input](docs/review-decisions.md).
    - Run `node src/cli.mjs qualification-prepare ANSWERS.json`. It uses your own
-     retained exam read, verifies its hash/identity/network, and prints an exact
+     retained exam read, verifies its hash/identity/network, validates all checks,
+     evidence references and exact quotes, and prints an exact
      `signingRequestFile`. It does not choose answers or grade them.
    - Use your own wallet to sign that request, saving `{signature}` privately.
    - Run `node src/cli.mjs qualification-proof SIGNATURE.json`, then run the
@@ -153,7 +152,8 @@ A challenge is not permission to sign arbitrary messages or transactions.
    - Read `calibration-challenge result` with a fresh own proof to check grading.
    These helpers keep keys in your wallet, never sign a payment, and do not send
    any answer until you explicitly run `qualification-submit`.
-   `qualification-submit` requires exactly `{examId, answers, signature}` with
+   Legacy {caseId, review} input is accepted only when all context fields match
+   the retained case; mismatches are rejected.\n   `qualification-submit` requires exactly `{examId, answers, signature}` with
    your own EIP-191 signature over the documented answer hash. An unsigned
    answers file is not a submission. Structurally invalid legacy proof files
    are archived before replacement because the API rejects them before any
